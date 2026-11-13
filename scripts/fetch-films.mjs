@@ -7,6 +7,17 @@ if (!TOKEN) { console.error('TMDB_TOKEN is not set'); process.exit(1); }
 const TMDB = 'https://api.themoviedb.org/3';
 const REGION = 'JP', LANG = 'ja-JP', MAX_PAGES = 12, POOL = 8;
 const TYPE_RANK = { Trailer: 0, Teaser: 1, Clip: 2, Featurette: 3 };
+// Same title rules as cinemaladder:
+// - Titles with no Japanese entry come back in the original script (Tamil, Arabic, Hangul...); those films are left out.
+//   Unlike cinemaladder, symbols such as ─ ★ ♪ → (U+2100–27BF) are allowed, so 「4アウト ─もう一度、プレイボール─」 stays.
+const readable = t => !!t && !/[^\u0000-\u024F\u2000-\u206F\u2100-\u27BF\u2E80-\u30FF\u3400-\u9FFF\uF900-\uFAFF\uFF00-\uFFEF]/.test(t);
+// - Radical look-alikes pasted into TMDB titles (the Kangxi "⼆", the supplement "⻯" as in "RYUJI ⻯⼆") become ordinary kanji.
+//   Kangxi radicals are fixed by NFKC; the supplement block is not, so the common ones are mapped by hand.
+const RAD = { '⻁': '虎', '⻄': '西', '⻆': '角', '⻑': '長', '⻘': '青', '⻝': '食', '⻣': '骨', '⻤': '鬼', '⻨': '麦', '⻩': '黄', '⻫': '斉', '⻭': '歯', '⻯': '竜', '⻲': '亀' };
+const fixRad = s => (s || '').replace(/[\u2F00-\u2FD5]/g, c => c.normalize('NFKC')).replace(/[\u2E80-\u2EFF]/g, c => RAD[c] || c.normalize('NFKC'));
+// - Genre names come from the id, not TMDB's Japanese labels (which have oddities such as History as 履歴).
+const GENRE_JA = { 28: 'アクション', 12: 'アドベンチャー', 16: 'アニメーション', 35: 'コメディ', 80: '犯罪', 99: 'ドキュメンタリー', 18: 'ドラマ', 10751: 'ファミリー', 14: 'ファンタジー', 36: '歴史', 27: 'ホラー', 10402: '音楽', 9648: 'ミステリー', 10749: 'ロマンス', 878: 'サイエンスフィクション', 10770: 'テレビ映画', 53: 'スリラー', 10752: '戦争', 37: '西部劇' };
+
 const pad = n => String(n).padStart(2, '0');
 const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const addMonths = (d, n) => { const r = new Date(d.getFullYear(), d.getMonth() + n, d.getDate()); if (r.getDate() !== d.getDate()) r.setDate(0); return r; };
@@ -55,9 +66,9 @@ function shape(d, m, fromS, toS) {
   const crew = (d.credits && d.credits.crew) || [], cast = (d.credits && d.credits.cast) || [];
   const primary = d.release_date || '';
   return {
-    id: d.id, title: d.title || d.original_title || '', otitle: d.original_title || '', ol, date, cert,
+    id: d.id, title: fixRad(d.title || d.original_title || ''), otitle: d.original_title || '', ol, date, cert,
     pop: d.popularity || m.popularity || 0, overview: d.overview || '', runtime: d.runtime || 0,
-    genres: (d.genres || []).map(g => g.name), gids: (d.genres || []).map(g => g.id),
+    genres: (d.genres || []).map(g => GENRE_JA[g.id] || g.name), gids: (d.genres || []).map(g => g.id),
     backdrop: d.backdrop_path || '', poster: d.poster_path || '',
     director: crew.filter(c => c.job === 'Director').map(c => c.name).slice(0, 2),
     cast: cast.slice(0, 5).map(c => c.name),
@@ -76,19 +87,32 @@ const first = await tmdb('/discover/movie', { page: 1, ...base });
 const pages = Math.min(first.total_pages || 1, MAX_PAGES);
 const rest = await Promise.all(Array.from({ length: pages - 1 }, (_, i) => tmdb('/discover/movie', { page: i + 2, ...base })));
 const seen = new Set(), list = [];
-for (const r of [first, ...rest]) for (const m of r.results || []) if (!seen.has(m.id)) { seen.add(m.id); list.push(m); }
+let unreadable = 0;
+for (const r of [first, ...rest]) for (const m of r.results || []) {
+  if (seen.has(m.id)) continue;
+  seen.add(m.id);
+  if (!readable(m.title) || /^untitled$/i.test((m.title || '').trim())) { unreadable++; continue; }   // no Japanese title, or a placeholder
+  if (!(m.genre_ids || []).length && !m.poster_path) continue;   // no genre and no poster: mostly video products, not films
+  list.push(m);
+}
 
 const films = []; let skipped = 0, failed = 0;
 await pool(list, POOL, async m => {
   try {
     const d = await tmdb('/movie/' + m.id, { language: LANG, append_to_response: 'videos,release_dates,credits', include_video_language: 'ja,en,null' });
+    if (!readable(d.title)) { unreadable++; return; }
+    if (!(d.overview || '').trim()) {   // no Japanese synopsis: fall back to the English one
+      const en = await tmdb('/movie/' + m.id, { language: 'en-US' }).catch(() => null);
+      if (en && en.overview) d.overview = en.overview.trim();
+    }
     const f = shape(d, m, fromS, toS);
     if (f && f.none) skipped++; else if (f) films.push(f);
   } catch (e) { if (e.status === 401) throw e; failed++; console.warn(String(e)); }
 });
+if (films.length < 5) { console.error(`only ${films.length} films; keeping the previous data`); process.exit(1); }
 if (failed > list.length / 4) { console.error(`${failed} of ${list.length} lookups failed; keeping the previous data`); process.exit(1); }
 films.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : b.pop - a.pop || a.id - b.id);
 
 await mkdir('data', { recursive: true });
 await writeFile('data/films.json', JSON.stringify({ from: fromS, to: toS, today: iso(today), fetchedAt: Date.now(), films, skipped }) + '\n');
-console.log(`${films.length} films with trailers (${skipped} without, ${failed} failed) for ${fromS}..${toS}`);
+console.log(`${films.length} films with trailers (${skipped} without, ${unreadable} without a Japanese title, ${failed} failed) for ${fromS}..${toS}`);
