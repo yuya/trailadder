@@ -1,0 +1,8 @@
+{
+  // Cloudflare Workers Builds deploys this repository as a static site (no Worker code).
+  // The name must match the Worker in the Cloudflare dashboard.
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "trailadder",
+  "compatibility_date": "2026-06-01",
+  "assets": { "directory": "./" }
+}
