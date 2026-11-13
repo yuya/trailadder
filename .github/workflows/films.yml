@@ -39,5 +39,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m "Update films $(TZ=Asia/Tokyo date +%F)"
-          git pull --rebase origin main
+          git pull --rebase -X theirs origin main   # two runs in a row: the data just built wins
           git push origin HEAD:main
