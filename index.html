@@ -33,9 +33,10 @@
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{margin:0;height:100%;background:#000}
-body{position:fixed;inset:0;overflow:hidden;overscroll-behavior:none;font-family:var(--ui);color:var(--light);color-scheme:dark;
+/* 和文の字間を詰める（palt）を全体にかける。cinemaladder と同じ。和文と英数字のあいだはブラウザが細く空ける */
+body{position:fixed;inset:0;overflow:hidden;overscroll-behavior:none;font-family:var(--ui);color:var(--light);color-scheme:dark;font-feature-settings:"palt" 1;text-autospace:normal;
   -webkit-text-size-adjust:100%;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:none}
-button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;touch-action:manipulation}
+button{font:inherit;font-feature-settings:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;touch-action:manipulation}
 a{color:inherit}
 :focus-visible{outline:2px solid var(--bulb);outline-offset:2px}
 .curtain{background:
@@ -90,7 +91,9 @@ a{color:inherit}
 #stage:not(.hud) .h{opacity:0;pointer-events:none}
 
 #top{position:absolute;z-index:4;top:0;left:0;right:0;height:calc(46px + var(--gt));padding:var(--gt) calc(var(--gr) - 8px) 0 var(--gl);display:flex;align-items:center;gap:14px}
-.brand{flex:none;font:800 18px/1 var(--display);letter-spacing:.02em}
+.brand{flex:none;display:inline-flex;align-items:center;gap:7px;font:800 18px/1 var(--display);letter-spacing:.02em}
+.brand .mark{width:22px;height:22px;flex:none}
+.lad{color:var(--bulb)}
 .chips{display:flex;gap:6px;min-width:0}
 .chip{flex:none;height:30px;padding:0 12px;border-radius:99px;font:700 12px/1 var(--ui);background:rgba(0,0,0,.4);box-shadow:inset 0 0 0 1px rgba(255,245,220,.3);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 .chip small{font:500 11px/1 var(--ui);opacity:.7;margin-left:.45em;font-variant-numeric:tabular-nums}
@@ -114,6 +117,14 @@ a{color:inherit}
 #hint{display:none;position:absolute;z-index:4;left:50%;top:var(--mid);transform:translate(-50%,-50%);margin:0;pointer-events:none;white-space:nowrap;
   font:700 13px/1 var(--ui);background:rgba(0,0,0,.62);padding:10px 16px;border-radius:99px}
 #stage.stalled:not(.blocked):not(.direct) #hint{display:block}
+/* until the trailer is actually playing: three marquee bulbs light in turn over the still */
+#loader{display:none;position:absolute;z-index:3;left:50%;top:var(--mid);transform:translate(-50%,-50%);gap:11px;padding:13px 17px;border-radius:99px;pointer-events:none;
+  background:rgba(0,0,0,.42);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+#loader i{width:9px;height:9px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--silver);animation:chase 1.05s infinite}
+#loader i:nth-child(2){animation-delay:.175s}
+#loader i:nth-child(3){animation-delay:.35s}
+@keyframes chase{0%,55%,100%{background:transparent;box-shadow:inset 0 0 0 1.5px var(--silver)}12%,30%{background:var(--bulb);box-shadow:0 0 10px rgba(255,201,58,.85)}}
+#stage.loading:not(.stalled):not(.blocked):not(.direct) #loader{display:flex}
 #blockmsg{display:none;position:absolute;z-index:4;left:50%;top:var(--mid);transform:translate(-50%,-50%);text-align:center;font:700 13px/1.7 var(--ui);background:rgba(0,0,0,.6);padding:12px 18px;border-radius:14px;max-width:70%}
 #stage.blocked #blockmsg{display:block}
 #blockmsg a{display:inline-block;margin-top:6px;color:var(--bulb)}
@@ -124,7 +135,8 @@ a{color:inherit}
 #bNext{right:calc(var(--gr) - 12px)}
 @media (pointer:coarse){.edge{display:none}}
 
-#vinfo{position:absolute;z-index:4;right:var(--gr);bottom:calc(var(--railh) + var(--gb) + 12px);text-align:right;display:grid;gap:5px;font:500 12px/1.3 var(--ui);text-shadow:0 1px 6px rgba(0,0,0,.8)}
+#stage.scrub #vinfo{opacity:0}
+#vinfo{position:absolute;z-index:4;transition:opacity .15s;right:var(--gr);bottom:calc(var(--railh) + var(--gb) + 12px);text-align:right;display:grid;gap:5px;font:500 12px/1.3 var(--ui);text-shadow:0 1px 6px rgba(0,0,0,.8)}
 #vname{font-weight:700}
 #vtime{font-variant-numeric:tabular-nums;opacity:.86}
 #vinfo a{opacity:.86;text-underline-offset:3px}
@@ -144,7 +156,14 @@ a{color:inherit}
 .axis{position:absolute;left:0;right:0;bottom:0;height:11px}
 .axis span{position:absolute;bottom:0;transform:translateX(-50%);font:500 9.5px/1 var(--ui);opacity:.64;font-variant-numeric:tabular-nums;white-space:nowrap}
 .axis .now{opacity:1;font-weight:700}
-.bubble{position:absolute;bottom:calc(100% + 6px);transform:translateX(-50%);background:var(--light);color:var(--curtain-deep);font:700 12px/1 var(--ui);padding:7px 10px;border-radius:8px;white-space:nowrap;pointer-events:none}
+.day.sel{background:linear-gradient(to top,rgba(255,245,220,.22),rgba(255,245,220,0));border-radius:3px 3px 0 0}
+/* while scrubbing, the date floats well above the finger and a stem points down to the day */
+.bubble{position:absolute;bottom:calc(100% + 34px);transform:translateX(-50%);max-width:min(78vw,340px);background:var(--light);color:var(--curtain-deep);padding:8px 12px 9px;border-radius:10px;
+  pointer-events:none;box-shadow:0 8px 26px rgba(0,0,0,.5);display:grid;gap:3px;--tx:50%}
+.bubble b{font:700 13.5px/1.2 var(--ui);white-space:nowrap}
+.bubble span{font:700 11.5px/1.3 var(--ui);opacity:.72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bubble::before{content:"";position:absolute;top:100%;left:var(--tx);width:1.5px;height:34px;margin-left:-.75px;background:linear-gradient(var(--light),rgba(255,245,220,.25))}
+.bubble::after{content:"";position:absolute;top:calc(100% - 1px);left:var(--tx);margin-left:-7px;border:7px solid transparent;border-top-color:var(--light)}
 
 #seekfx{position:absolute;z-index:3;top:var(--mid);width:96px;height:96px;margin-top:-48px;border-radius:50%;background:rgba(0,0,0,.55);display:grid;place-items:center;font:700 12.5px/1 var(--ui);opacity:0;pointer-events:none}
 #seekfx.l{left:12%}
@@ -157,12 +176,11 @@ a{color:inherit}
   background:var(--bulb);color:var(--curtain-deep);font:700 13px/1.4 var(--ui);padding:7px 7px 7px 16px;border-radius:99px;box-shadow:0 6px 24px rgba(0,0,0,.5)}
 #direct button{font:700 12px/1 var(--ui);padding:9px 12px;border-radius:99px;background:rgba(42,7,16,.14)}
 
-#scrimS{position:absolute;inset:0;z-index:5;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .25s}
+#scrimS{position:absolute;inset:0;z-index:5;background:rgba(0,0,0,.32);opacity:0;pointer-events:none;transition:opacity .25s}
 #stage.sheet #scrimS{opacity:1;pointer-events:auto}
-#sheet{position:absolute;z-index:6;top:0;bottom:0;right:0;width:min(56%,500px);display:flex;flex-direction:column;transform:translateX(104%);transition:transform .28s cubic-bezier(.2,.8,.2,1);
-  box-shadow:-14px 0 44px rgba(0,0,0,.55);background:
-  repeating-linear-gradient(90deg,rgba(0,0,0,.2) 0 7px,rgba(0,0,0,0) 7px 24px,rgba(255,235,200,.045) 24px 33px,rgba(0,0,0,0) 33px 48px),
-  linear-gradient(180deg,rgba(92,20,38,.97),rgba(75,15,30,.97) 42%,rgba(42,7,16,.98))}
+/* the sheet is the same smoked glass as the rest of the overlay UI */
+#sheet{position:absolute;z-index:6;top:0;bottom:0;right:0;width:min(56%,500px);display:flex;flex-direction:column;transform:translateX(104%);transition:transform .28s cubic-bezier(.2,.8,.2,1),opacity .22s;
+  background:rgba(12,10,12,.68);-webkit-backdrop-filter:blur(28px) saturate(1.3);backdrop-filter:blur(28px) saturate(1.3);box-shadow:inset 1px 0 0 rgba(255,245,220,.1)}
 #stage.sheet #sheet{transform:none}
 #bClose{position:absolute;z-index:1;top:calc(var(--gt) + 2px);right:calc(var(--gr) - 8px)}
 #sheetBody{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;touch-action:none;padding:calc(var(--gt) + 14px) var(--gr) calc(var(--gb) + 16px) 22px;display:flex;flex-direction:column;gap:14px}
@@ -180,7 +198,7 @@ a{color:inherit}
 #sheetBody h3.sh{margin:0;padding-right:38px;font:800 21px/1.3 var(--display)}
 #sheetBody h4{margin:4px 0 -6px;font:700 12px/1.4 var(--ui);opacity:.7}
 .vids{list-style:none;margin:0;padding:0;display:grid;gap:6px}
-.vids button{width:100%;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;background:rgba(0,0,0,.26);font:500 12.5px/1.45 var(--ui)}
+.vids button{width:100%;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;background:rgba(255,245,220,.07);font:500 12.5px/1.45 var(--ui)}
 .vids button[aria-current="true"]{box-shadow:inset 0 0 0 1.5px var(--bulb)}
 .vids button span{flex:none;opacity:.66}
 .links{margin:0;display:flex;gap:18px;font:700 12.5px/1.4 var(--ui)}
@@ -230,7 +248,21 @@ a{color:inherit}
 #stage.tall #vinfo{left:var(--gl);display:flex;align-items:baseline;gap:14px;text-align:left}
 #stage.tall #vopen{margin-left:auto}
 #stage.tall .day i{width:3.5px;height:3.5px}
-#stage.tall #sheet{top:auto;left:0;right:0;width:auto;height:min(74%,680px);transform:translateY(104%);border-radius:16px 16px 0 0;box-shadow:0 -14px 44px rgba(0,0,0,.55)}
+#stage.tall #sheet{top:auto;left:0;right:0;width:auto;height:min(74%,680px);transform:translateY(104%);border-radius:16px 16px 0 0;box-shadow:inset 0 1px 0 rgba(255,245,220,.1)}
+/* portrait details: the area under the video simply becomes scrollable. The panel fades in exactly over the film's
+   date, title and synopsis (same type, same place) on the same blurred backdrop, and the rest follows below. */
+#stage.tall.inl #sheet{top:var(--vb);height:auto;bottom:0;transform:none;opacity:0;pointer-events:none;border-radius:0;background:none;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none}
+#stage.tall.inl.sheet #sheet{opacity:1;pointer-events:auto}
+#stage.tall.inl #scrimS{background:none}
+#stage.tall.inl #sheetBody{padding:18px var(--gr) calc(var(--gb) + 28px) var(--gl);
+  -webkit-mask-image:linear-gradient(to bottom,transparent,#000 16px);mask-image:linear-gradient(to bottom,transparent,#000 16px)}
+#stage.tall.inl #bClose{top:8px}
+#stage.tall .slide .meta,#stage.tall #vinfo,#stage.tall #rail{transition:opacity .22s}
+#stage.tall.inl.sheet .slide[data-role="cur"] .meta,#stage.tall.inl.sheet #vinfo,#stage.tall.inl.sheet #rail{opacity:0;pointer-events:none}
+.imeta{display:flex;flex-direction:column;gap:8px}
+.imeta .when{padding-right:40px}
+.imeta .title{display:block;overflow:visible}
+#stage.tall.inl .overview{font:500 13px/1.85 var(--ui);opacity:.84;margin-top:6px}
 #stage.tall.sheet #sheet{transform:none}
 
 #stage.tall #toast,#stage.tall #direct{top:calc(var(--vt) + 14px)}
@@ -255,7 +287,7 @@ a{color:inherit}
   <div id="progress"><i></i></div>
 
   <header id="top" class="h">
-    <span class="brand">trailadder</span>
+    <span class="brand"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#141418"/><path d="M11.6 6V20.2A4.6 4.6 0 0 0 16.2 24.8H22" fill="none" stroke="#FFFFFF" stroke-width="4.2"/><path d="M6.2 12.6H22" fill="none" stroke="#FFFFFF" stroke-width="4.2"/><rect x="21.5" y="6" width="3.6" height="20" fill="#FFC93A"/></svg><span>trai<span class="lad">ladder</span></span></span>
     <div class="chips" id="chips" role="group" aria-label="作品の絞り込み"></div>
     <div class="tools">
       <button class="ib" id="bSound" type="button" aria-label="音を出す">
@@ -280,6 +312,7 @@ a{color:inherit}
   </header>
 
   <p id="hint" class="h">映像をタップすると再生します</p>
+  <div id="loader" role="status" aria-label="予告編を読み込んでいます"><i></i><i></i><i></i></div>
   <div id="blockmsg" class="h">この予告は埋め込みでは再生できません<br><a id="blockopen" target="_blank" rel="noopener">YouTube で開く</a></div>
   <button class="edge h" id="bPrev" type="button" aria-label="前の作品へ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
   <button class="edge h" id="bNext" type="button" aria-label="次の作品へ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
@@ -299,7 +332,7 @@ a{color:inherit}
 
   <div id="veil" class="curtain" hidden>
     <div class="vin">
-      <p class="vbrand">trailadder</p>
+      <p class="vbrand">trai<span class="lad">ladder</span></p>
       <p id="vmsg"></p>
       <div class="vbar"><i id="vbar"></i></div>
       <p id="vsub"></p>
@@ -397,6 +430,7 @@ function layout() {
   stage.classList.toggle('ccw', rot === -90);
   stage.classList.toggle('narrow', W < 760);
   stage.classList.toggle('tall', !rot && H > W);
+  if (!stage.classList.contains('tall') && stage.classList.contains('inl')) { stage.classList.remove('inl'); if (sheetOpen === 'info') sheetBody.innerHTML = infoHTML(view[idx]); }
   const bo = $('#bOrient');
   bo.hidden = !coarse;
   bo.setAttribute('aria-label', prefs.mode === 'landscape' ? '縦画面にする' : '横画面にする');
@@ -428,10 +462,11 @@ function stateOf(date) {
   if (d === 0) return { lit: true, text: 'きょう公開' };
   return { lit: true, text: `公開${1 - d}日目` };
 }
+const GENRE_SHORT = { サイエンスフィクション: 'SF', アニメーション: 'アニメ', 履歴: '歴史' };   // cinemaladder と同じ短縮
 function subOf(f) {
   const a = [];
   if (f.runtime) a.push(f.runtime + '分');
-  if (f.genres.length) a.push(f.genres.slice(0, 2).join('／'));
+  if (f.genres.length) a.push(f.genres.slice(0, 2).map(g => GENRE_SHORT[g] || g).join('／'));
   if (f.cert) a.push(f.cert);
   if (f.revival) a.push('リバイバル上映');
   return a.join('　');
@@ -506,11 +541,11 @@ function onSettle() {
 }
 function queueLoad() {
   clearTimeout(loadT);
-  stage.classList.remove('stalled', 'playing', 'buffering');
+  stage.classList.remove('stalled', 'playing', 'buffering', 'loading');
   $('#progress i').style.width = '0'; $('#vtime').textContent = '';
   if (P.ready) { try { P.yt.pauseVideo(); } catch (e) {} }
   const f = view[idx]; if (!f || f.blocked) { loadPending = false; return; }
-  loadPending = true;
+  loadPending = true; stage.classList.add('loading');
   loadT = setTimeout(() => { loadPending = false; P.load(curVid(f).key); }, P.yt ? 180 : 0);
 }
 function updateVinfo() {
@@ -523,7 +558,7 @@ function updateVinfo() {
 
 /* ---------- YouTube: one player for every film, so a single tap unlocks sound for the session ---------- */
 const P = {
-  yt: null, ready: false, creating: false, state: -1, key: null, want: null, muted: true, stallT: 0, apiP: null,
+  yt: null, ready: false, creating: false, state: -1, key: null, want: null, muted: true, stallT: 0, apiP: null, capKey: null,
   api() {
     if (this.apiP) return this.apiP;
     this.apiP = new Promise((res, rej) => {
@@ -556,7 +591,7 @@ const P = {
   },
   create(key) {
     this.key = key;
-    const vars = { autoplay: 1, mute: 1, controls: 0, playsinline: 1, rel: 0, fs: 0, disablekb: 1, iv_load_policy: 3, hl: 'ja' };
+    const vars = { autoplay: 1, mute: 1, controls: 0, playsinline: 1, rel: 0, fs: 0, disablekb: 1, iv_load_policy: 3, cc_load_policy: 0, hl: 'ja' };
     if (/^https?:$/.test(location.protocol)) vars.origin = location.origin;
     this.yt = new YT.Player('yt', { width: '100%', height: '100%', videoId: key, playerVars: vars,
       events: { onReady: () => this.onReady(), onStateChange: e => this.onState(e.data), onError: e => this.onError(e.data) } });
@@ -580,7 +615,8 @@ const P = {
     if (s === 1) {
       clearTimeout(this.stallT);
       stage.classList.remove('stalled', 'buffering');
-      if (isCur) { stage.classList.add('playing'); roles.cur.classList.add('live'); }
+      if (isCur) { stage.classList.add('playing'); stage.classList.remove('loading'); roles.cur.classList.add('live'); }
+      if (this.capKey !== this.key) { this.capKey = this.key; this.noCaptions(); setTimeout(() => this.noCaptions(), 1500); }
       if (direct) { if (direct === 'sound') { this.muted = false; syncSound(); } exitDirect(false); }
       setHud(hudOn);
     } else if (s === 3) {
@@ -589,9 +625,14 @@ const P = {
       stage.classList.remove('playing', 'buffering');
       if (isCur && !direct) setHud(true);
     } else if (s === 0) {
-      stage.classList.remove('playing', 'buffering');
+      stage.classList.remove('playing', 'buffering', 'loading');
       if (isCur) { if (prefs.autoNext && view.length > 1 && !sheetOpen) go(1); else setHud(true); }
     }
+  },
+  // YouTube turns captions on by itself (from the viewer's account or the video's settings); unloading the module hides them.
+  // Subtitles burned into the picture cannot be removed.
+  noCaptions() {
+    for (const m of ['captions', 'cc']) { try { this.yt.unloadModule(m); } catch (e) {} }
   },
   onError(code) {
     const f = view[idx];
@@ -749,14 +790,20 @@ function scrub(e) {
   for (let j = 0; j < railN; j++) if (byDay.has(railDays[j]) && Math.abs(j - k) < bd) { bd = Math.abs(j - k); best = j; }
   if (best < 0) return;
   const s = railDays[best], list = byDay.get(s), d = parseISO(s);
-  bubble.hidden = false;
-  bubble.style.left = clamp((best + .5) / railN * 100, 6, 94) + '%';
-  bubble.textContent = `${d.getMonth() + 1}月${d.getDate()}日（${DOW[d.getDay()]}）　${list.length}本`;
   if (!list.includes(idx)) jumpTo(list[0]);
+  const sel = $('.day.sel', daysEl); if (sel) sel.classList.remove('sel');
+  daysEl.children[best].classList.add('sel');
+  bubble.innerHTML = `<b>${d.getMonth() + 1}月${d.getDate()}日（${DOW[d.getDay()]}）・${list.length}本</b><span>${esc(view[idx].title)}</span>`;
+  bubble.hidden = false;
+  // keep the bubble on screen; the stem still points at the day
+  const rw = daysEl.offsetWidth, colX = (best + .5) / railN * rw, bw = bubble.offsetWidth;
+  const left = clamp(colX, bw / 2, rw - bw / 2);
+  bubble.style.left = left + 'px';
+  bubble.style.setProperty('--tx', (colX - left + bw / 2) + 'px');
 }
-rail.addEventListener('pointerdown', e => { try { rail.setPointerCapture(e.pointerId); } catch (x) {} scrubbing = true; setHud(true); scrub(e); });
+rail.addEventListener('pointerdown', e => { try { rail.setPointerCapture(e.pointerId); } catch (x) {} scrubbing = true; stage.classList.add('scrub'); setHud(true); scrub(e); });
 rail.addEventListener('pointermove', e => { if (scrubbing) scrub(e); });
-const scrubEnd = () => { if (!scrubbing) return; scrubbing = false; bubble.hidden = true; setHud(true); };
+const scrubEnd = () => { if (!scrubbing) return; scrubbing = false; stage.classList.remove('scrub'); bubble.hidden = true; const sel = $('.day.sel', daysEl); if (sel) sel.classList.remove('sel'); setHud(true); };
 rail.addEventListener('pointerup', scrubEnd);
 rail.addEventListener('pointercancel', scrubEnd);
 
@@ -772,7 +819,8 @@ gest.addEventListener('pointerdown', e => {
   if (ptrs.size === 2) { if (g && g.mode === 'h') setX(0, true); g = { mode: 'pinch', d0: pinchDist() || 1, done: false }; return; }
   if (ptrs.size > 2) return;
   if (animating) finalize();
-  g = { mode: null, id: e.pointerId, x0: p.x, y0: p.y, x: p.x, y: p.y, t0: e.timeStamp, samples: [{ x: p.x, t: e.timeStamp }] };
+  const vr = stage.classList.contains('tall') ? uiRect(ytbox) : null;
+  g = { mode: null, id: e.pointerId, x0: p.x, y0: p.y, x: p.x, y: p.y, t0: e.timeStamp, samples: [{ x: p.x, t: e.timeStamp }], below: !!vr && p.y > vr.top + vr.height };
 });
 gest.addEventListener('pointermove', e => {
   if (!ptrs.has(e.pointerId)) return;
@@ -787,8 +835,18 @@ gest.addEventListener('pointermove', e => {
   }
   if (e.pointerId !== g.id) return;
   const dx = p.x - g.x0, dy = p.y - g.y0;
-  if (!g.mode) { if (Math.hypot(dx, dy) < 10) return; g.mode = Math.abs(dx) >= Math.abs(dy) ? 'h' : 'v'; }
+  if (!g.mode) {
+    if (Math.hypot(dx, dy) < 10) return;
+    g.mode = Math.abs(dx) >= Math.abs(dy) ? 'h' : 'v';
+    if (g.mode === 'v' && g.below && dy < 0) { openSheet('info'); g.mode = 'scroll'; g.ys = p.y; g.ly = p.y; g.lt = e.timeStamp; g.vy = 0; }
+  }
   g.x = p.x; g.y = p.y;
+  if (g.mode === 'scroll') {
+    sheetBody.scrollTop = g.ys - p.y;
+    const dt = e.timeStamp - g.lt;
+    if (dt > 0) { g.vy = (p.y - g.ly) / dt; g.ly = p.y; g.lt = e.timeStamp; }
+    return;
+  }
   if (g.mode === 'h') {
     setX(view.length < 2 ? dx * .28 : dx, false);
     g.samples.push({ x: p.x, t: e.timeStamp });
@@ -803,6 +861,7 @@ function gestEnd(e) {
   if (e.pointerId !== g.id) return;
   const cur = g; g = null;
   const dx = cur.x - cur.x0, dy = cur.y - cur.y0;
+  if (cur.mode === 'scroll') { fling(cur.vy); return; }
   if (cur.mode === 'h') {
     const s = cur.samples, a = s[0], b = s[s.length - 1];
     const v = s.length > 1 ? (b.x - a.x) / Math.max(1, b.t - a.t) : 0;
@@ -855,6 +914,15 @@ addEventListener('keydown', e => {
 function infoHTML(f) {
   const d = parseISO(f.date);
   const vi = f.vi || 0;
+  if (stage.classList.contains('inl')) {
+    const st = stateOf(f.date);
+    return `
+  <div class="imeta">
+    <p class="when"><span class="date">${d.getMonth() + 1}.${d.getDate()}</span><span class="dow">${DOW[d.getDay()]}</span><span class="state ${st.lit ? 'lit' : 'unlit'}">${st.text}</span></p>
+    <h2 class="title">${esc(f.title)}</h2>
+    <p class="sub">${esc(subOf(f))}</p>
+  </div>${detailsHTML(f, vi)}`;
+  }
   return `
   <div class="ihead">
     ${f.poster ? `<img class="poster" src="${IMG}w185${esc(f.poster)}" alt="">` : ''}
@@ -864,10 +932,14 @@ function infoHTML(f) {
       ${f.otitle && f.otitle !== f.title ? `<p class="iorig">${esc(f.otitle)}</p>` : ''}
       <p class="isub">${esc(subOf(f))}</p>
     </div>
-  </div>
+  </div>${detailsHTML(f, vi)}`;
+}
+function detailsHTML(f, vi) {
+  const orig = stage.classList.contains('inl') && f.otitle && f.otitle !== f.title;   // in portrait the header mirrors the film card, so the original title sits here
+  return `
   <p class="overview">${f.overview ? esc(f.overview) : 'あらすじは TMDB にまだ登録されていません。'}</p>
   ${f.ovLang === 'mt' ? '<p class="ovnote">英語のあらすじを機械翻訳しています</p>' : f.ovLang === 'en' ? '<p class="ovnote">日本語のあらすじが未登録のため、英語で表示しています</p>' : ''}
-  ${f.director.length || f.cast.length ? `<dl class="credits">${f.director.length ? `<dt>監督</dt><dd>${esc(f.director.join('、'))}</dd>` : ''}${f.cast.length ? `<dt>出演</dt><dd>${esc(f.cast.join('、'))}</dd>` : ''}</dl>` : ''}
+  ${f.director.length || f.cast.length || orig ? `<dl class="credits">${orig ? `<dt>原題</dt><dd>${esc(f.otitle)}</dd>` : ''}${f.director.length ? `<dt>監督</dt><dd>${esc(f.director.join('、'))}</dd>` : ''}${f.cast.length ? `<dt>出演</dt><dd>${esc(f.cast.join('、'))}</dd>` : ''}</dl>` : ''}
   <h4>この作品の映像</h4>
   <ul class="vids">${f.vids.map((v, i) => `<li><button type="button" data-vi="${i}" aria-current="${i === vi}">${esc(v.name || vidLabel(v))}<span>${esc(vidLabel(v))}</span></button></li>`).join('')}</ul>
   <p class="links"><a href="https://www.youtube.com/watch?v=${esc(curVid(f).key)}" target="_blank" rel="noopener">YouTube で開く</a><a href="https://www.themoviedb.org/movie/${f.id}?language=ja-JP" target="_blank" rel="noopener">TMDB で見る</a></p>`;
@@ -884,9 +956,11 @@ function settingsHTML() {
   <div class="row"><span>音が出ないとき<small>映像を一度だけ直接タップして再生します</small></span><button class="btn" type="button" data-act="unlock">直接タップに切り替える</button></div>
   <p class="credit">作品情報と画像は TMDB から取得しています。This product uses the TMDB API but is not endorsed or certified by TMDB. 映像は YouTube の埋め込みプレイヤーで再生しています。</p>`;
 }
+let inlT = 0;
 function openSheet(kind) {
   if (!view.length) return;
   sheetOpen = kind;
+  clearTimeout(inlT); stage.classList.toggle('inl', kind === 'info' && stage.classList.contains('tall'));
   sheetBody.innerHTML = kind === 'info' ? infoHTML(view[idx]) : settingsHTML();
   sheetBody.scrollTop = 0;
   stage.classList.add('sheet'); sheet.setAttribute('aria-hidden', 'false'); setHud(true);
@@ -894,6 +968,7 @@ function openSheet(kind) {
 function closeSheet() {
   if (!sheetOpen) return;
   sheetOpen = null; stage.classList.remove('sheet'); sheet.setAttribute('aria-hidden', 'true'); setHud(true);
+  clearTimeout(inlT); inlT = setTimeout(() => { if (!sheetOpen) stage.classList.remove('inl'); }, 260);   // after the fade
 }
 function sheetAct(target, viaTouch) {
   const b = target.closest('[data-vi],[data-act]');
@@ -926,13 +1001,20 @@ sheetBody.addEventListener('change', e => {
   if (e.target.id === 'optFill') setFill(e.target.checked);
 });
 // native scrolling follows the screen, not the rotated stage, so touch scrolling is done by hand
+let flingRaf = 0;
+function fling(vy) {
+  cancelAnimationFrame(flingRaf);
+  let v = clamp(vy, -3, 3) * 16;
+  const step = () => { if (Math.abs(v) < .4) return; sheetBody.scrollTop -= v; v *= .94; flingRaf = requestAnimationFrame(step); };
+  step();
+}
 (() => {
-  let id = null, x0 = 0, y0 = 0, s0 = 0, t0 = 0, ly = 0, lt = 0, vy = 0, moved = false, raf = 0;
+  let id = null, x0 = 0, y0 = 0, s0 = 0, t0 = 0, ly = 0, lt = 0, vy = 0, moved = false;
   sheetBody.addEventListener('pointerdown', e => {
     if (e.pointerType === 'mouse') return;
     const p = toUI(e.clientX, e.clientY);
     id = e.pointerId; x0 = p.x; y0 = ly = p.y; t0 = lt = e.timeStamp; s0 = sheetBody.scrollTop; vy = 0; moved = false;
-    cancelAnimationFrame(raf);
+    cancelAnimationFrame(flingRaf);
   });
   sheetBody.addEventListener('pointermove', e => {
     if (e.pointerId !== id) return;
@@ -948,9 +1030,7 @@ sheetBody.addEventListener('change', e => {
     id = null;
     if (!moved) { if (e.type === 'pointerup' && e.timeStamp - t0 < 700 && sheetAct(e.target, true)) markTap(e); return; }
     setTimeout(() => { moved = false; }, 80);
-    let v = clamp(vy, -3, 3) * 16;
-    const step = () => { if (Math.abs(v) < .4) return; sheetBody.scrollTop -= v; v *= .94; raf = requestAnimationFrame(step); };
-    step();
+    fling(vy);
   };
   sheetBody.addEventListener('pointerup', up);
   sheetBody.addEventListener('pointercancel', up);
