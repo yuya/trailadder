@@ -1,9 +1,0 @@
-{
-  "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "trailadder",
-  "main": "worker.js",
-  "compatibility_date": "2026-06-01",
-  // index.html and the icons are served as static files; /api/* falls through to worker.js
-  "assets": { "directory": "./", "binding": "ASSETS" },
-  "observability": { "enabled": true }
-}

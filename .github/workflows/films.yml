@@ -1,0 +1,41 @@
+# Rebuilds data/films.json every morning (6:13 Japan time) from TMDB, using the repository secret TMDB_TOKEN.
+# Pushing the new file is what republishes the site.
+name: Update films
+
+on:
+  schedule:
+    - cron: '13 21 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [scripts/fetch-films.mjs, .github/workflows/films.yml]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: films
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Fetch films from TMDB
+        run: node scripts/fetch-films.mjs
+        env:
+          TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
+      - name: Commit the new data
+        run: |
+          git add data/films.json
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m "Update films $(TZ=Asia/Tokyo date +%F)"
+          git pull --rebase origin main
+          git push origin HEAD:main

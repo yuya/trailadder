@@ -207,23 +207,6 @@ a{color:inherit}
 #toast{position:absolute;z-index:9;left:50%;top:calc(var(--gt) + 52px);transform:translate(-50%,-8px);max-width:78%;text-align:center;background:rgba(0,0,0,.8);font:500 12.5px/1.55 var(--ui);padding:9px 14px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
 #toast.on{opacity:1;transform:translate(-50%,0)}
 
-/* ---------- setup: follows the device, so the keyboard lines up with the field ---------- */
-#setup{position:fixed;inset:0;z-index:20;overflow:auto;touch-action:pan-y;display:grid;align-content:center;
-  padding:max(28px,env(safe-area-inset-top)) max(26px,env(safe-area-inset-right)) max(28px,env(safe-area-inset-bottom)) max(26px,env(safe-area-inset-left))}
-.sin{width:100%;max-width:30rem;margin:0 auto;display:grid;gap:14px}
-.sin h1{margin:0;font:800 clamp(44px,14vw,84px)/1 var(--display)}
-.tag{margin:0;font:800 clamp(19px,5.4vw,26px)/1.4 var(--display)}
-.lead{margin:0;max-width:29em;font:500 14px/1.9 var(--ui);opacity:.9}
-#keyForm{display:grid;gap:10px;margin-top:10px}
-#keyForm label{font:700 13px/1.4 var(--ui)}
-#key{width:100%;height:52px;padding:0 14px;border-radius:10px;border:1.5px solid rgba(255,245,220,.45);background:rgba(0,0,0,.3);color:var(--light);font:500 16px/1.2 var(--ui);-webkit-user-select:text;user-select:text}
-#key::placeholder{color:rgba(255,245,220,.45)}
-#bGo{height:52px;border-radius:99px;background:var(--bulb);color:var(--curtain-deep);font:700 16px/1 var(--ui)}
-#bGo[disabled]{opacity:.6}
-#serr{margin:0;font:700 13px/1.7 var(--ui);color:#ffd7cf}
-.help{margin:0;font:500 12px/1.8 var(--ui);opacity:.8}
-.help a{text-underline-offset:3px}
-#fileWarn{margin:0;padding:12px 14px;border-radius:10px;background:rgba(0,0,0,.32);font:500 12.5px/1.8 var(--ui)}
 
 /* ---------- portrait layout: video band on top, the film below it ---------- */
 #stage.tall{--railh:70px;--vt:calc(var(--gt) + 88px);--vh:calc(var(--W) * 9 / 16);--vb:calc(var(--vt) + var(--vh));--mid:calc(var(--vt) + var(--vh) / 2)}
@@ -318,28 +301,13 @@ a{color:inherit}
       <p id="vmsg"></p>
       <div class="vbar"><i id="vbar"></i></div>
       <p id="vsub"></p>
-      <div id="vact"><button class="btn" id="bRetry" type="button">もう一度読み込む</button><button class="btn" id="bRekey" type="button">API キーを変更する</button></div>
+      <div id="vact"><button class="btn" id="bRetry" type="button">もう一度読み込む</button></div>
     </div>
   </div>
 
   <div id="toast" role="status" aria-live="polite"></div>
 </div>
 
-<main id="setup" class="curtain" hidden>
-  <div class="sin">
-    <h1>trailadder</h1>
-    <p class="tag">予告を、ヨコで。</p>
-    <p class="lead">公開から1か月以内の映画と、2か月先までの公開予定作の予告編を、公開日順にスワイプで次々観られます。縦画面のほか、縦向きにロックしたまま横いっぱいに使う横画面にも切り替えられます。</p>
-    <p id="fileWarn" hidden>このファイルを端末から直接開いています。YouTube は https で公開されたページでしか再生を許可しないため、GitHub Pages などに置いてから開いてください。</p>
-    <form id="keyForm" autocomplete="off">
-      <label for="key">TMDB の API キー</label>
-      <input id="key" name="key" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="32桁のキー、または eyJ で始まるトークン">
-      <p id="serr" role="alert" hidden></p>
-      <button id="bGo" type="submit">予告を観る</button>
-    </form>
-    <p class="help">キーはこのブラウザの中にだけ保存し、作品情報の取得に使います。<a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener">TMDB でキーを発行する</a></p>
-  </div>
-</main>
 
 <script>
 (() => {
@@ -349,7 +317,7 @@ a{color:inherit}
 const TMDB = 'https://api.themoviedb.org/3';
 const IMG = 'https://image.tmdb.org/t/p/';
 const REGION = 'JP', LANG = 'ja-JP';
-const MAX_PAGES = 12, POOL = 8, CACHE_TTL = 6 * 36e5, CACHE_V = 2, HOT_N = 20, MAXDOT = 5;
+const HOT_N = 20, MAXDOT = 5;
 const NS = 'trailadder.';
 const DOW = ['日', '月', '火', '水', '木', '金', '土'];
 const TYPE_JA = { Trailer: '予告編', Teaser: '特報', Clip: '本編映像', Featurette: '特別映像', 'Behind the Scenes': 'メイキング', Bloopers: 'NG集', 'Opening Credits': 'オープニング' };
@@ -399,14 +367,12 @@ function onTap(el, fn) {
 /* ---------- elements & state ---------- */
 const stage = $('#stage'), track = $('#track'), player = $('#player'), ytbox = $('#ytbox'), ambient = $('#ambient');
 const gest = $('#gest'), rail = $('#rail'), daysEl = $('#days'), axisEl = $('#axis'), bubble = $('#bubble');
-const sheet = $('#sheet'), sheetBody = $('#sheetBody'), setup = $('#setup');
+const sheet = $('#sheet'), sheetBody = $('#sheetBody');
 const slides = [...document.querySelectorAll('.slide')];
 const roles = { prev: slides[0], cur: slides[1], next: slides[2] };
 
 const prefs = Object.assign({ mode: 'portrait', flip: false, fill: false, autoNext: true }, store.get('prefs', {}));
 const savePrefs = () => store.set('prefs', prefs);
-let apiKey = store.get('key', '');
-let proxy = false;   // true when the page is served with its own /api relay (Cloudflare), which holds the TMDB token
 let data = null;          // { from, to, today, fetchedAt, films, skipped }
 let view = [];            // films after the active filter, in release order
 let idx = 0;
@@ -450,83 +416,6 @@ function uiRect(el) {
   if (rot === 90) return { left: r.top, top: VW - r.right, width: r.height, height: r.width };
   if (rot === -90) return { left: VH - r.bottom, top: r.left, width: r.height, height: r.width };
   return { left: r.left, top: r.top, width: r.width, height: r.height };
-}
-
-/* ---------- TMDB ---------- */
-async function tmdb(path, params, tries) {
-  tries = tries || 0;
-  const url = new URL(proxy ? location.origin + '/api' + path : TMDB + path);
-  const headers = { accept: 'application/json' };
-  if (proxy) {}
-  else if (apiKey.length > 60 || apiKey.startsWith('eyJ')) headers.Authorization = 'Bearer ' + apiKey;
-  else url.searchParams.set('api_key', apiKey);
-  for (const k in (params || {})) url.searchParams.set(k, params[k]);
-  const res = await fetch(url, { headers });
-  if (res.status === 429 && tries < 3) { await sleep(1200 * (tries + 1)); return tmdb(path, params, tries + 1); }
-  if (!res.ok) { const e = new Error('TMDB ' + res.status); e.status = res.status; throw e; }
-  return res.json();
-}
-async function pool(items, n, fn) {
-  let i = 0;
-  const run = async () => { while (i < items.length) { const it = items[i++]; await fn(it); } };
-  await Promise.all(Array.from({ length: Math.min(n, items.length) }, run));
-}
-function shape(d, m, fromS, toS) {
-  const jp = ((d.release_dates && d.release_dates.results) || []).find(r => r.iso_3166_1 === REGION);
-  let date = '', cert = '';
-  if (jp) {
-    const th = (jp.release_dates || []).filter(r => r.type === 2 || r.type === 3)
-      .map(r => ({ date: (r.release_date || '').slice(0, 10), cert: r.certification || '' }))
-      .sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
-    const hit = th.find(r => r.date >= fromS && r.date <= toS);
-    if (hit) date = hit.date;
-    cert = (hit && hit.cert) || ((jp.release_dates || []).find(r => r.certification) || {}).certification || '';
-  }
-  if (!date) { const rd = m.release_date || ''; if (rd >= fromS && rd <= toS) date = rd; }
-  if (!date) return null;
-  const ol = d.original_language || '';
-  const vids = ((d.videos && d.videos.results) || []).filter(v => v.site === 'YouTube' && v.key)
-    .map(v => ({ key: v.key, name: v.name || '', type: v.type || '', lang: v.iso_639_1 || '', official: v.official ? 1 : 0, at: v.published_at || '' }));
-  if (!vids.length) return { none: true };
-  // Japanese trailers first, then the original-language ones; newest cut first
-  const main = v => (v.type === 'Trailer' || v.type === 'Teaser') ? 0 : 1;
-  const lr = v => v.lang === 'ja' ? 0 : (v.lang === ol || v.lang === 'en') ? 1 : 2;
-  const tr = v => v.type in TYPE_RANK ? TYPE_RANK[v.type] : 9;
-  vids.sort((a, b) => main(a) - main(b) || lr(a) - lr(b) || tr(a) - tr(b) || b.official - a.official || (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
-  const crew = (d.credits && d.credits.crew) || [], cast = (d.credits && d.credits.cast) || [];
-  const primary = d.release_date || '';
-  return {
-    id: d.id, title: d.title || d.original_title || '', otitle: d.original_title || '', ol, date, cert,
-    pop: d.popularity || m.popularity || 0, overview: d.overview || '', runtime: d.runtime || 0,
-    genres: (d.genres || []).map(g => g.name), gids: (d.genres || []).map(g => g.id),
-    backdrop: d.backdrop_path || '', poster: d.poster_path || '',
-    director: crew.filter(c => c.job === 'Director').map(c => c.name).slice(0, 2),
-    cast: cast.slice(0, 5).map(c => c.name),
-    revival: !!primary && parseInt(date, 10) - parseInt(primary, 10) >= 2,
-    vids: vids.slice(0, 8)
-  };
-}
-async function loadData(onProgress) {
-  const today = startOfDay(new Date());
-  const fromS = iso(addMonths(today, -1)), toS = iso(addMonths(today, 2));
-  const base = { region: REGION, language: LANG, include_adult: 'false', include_video: 'false', with_release_type: '2|3', 'release_date.gte': fromS, 'release_date.lte': toS, sort_by: 'popularity.desc' };
-  const first = await tmdb('/discover/movie', Object.assign({ page: 1 }, base));
-  const pages = Math.min(first.total_pages || 1, MAX_PAGES);
-  const rest = await Promise.all(Array.from({ length: pages - 1 }, (_, i) => tmdb('/discover/movie', Object.assign({ page: i + 2 }, base))));
-  const seen = new Set(), list = [];
-  for (const r of [first, ...rest]) for (const m of (r.results || [])) if (!seen.has(m.id)) { seen.add(m.id); list.push(m); }
-  const films = []; let done = 0, skipped = 0;
-  onProgress(0, list.length);
-  await pool(list, POOL, async m => {
-    try {
-      const d = await tmdb('/movie/' + m.id, { language: LANG, append_to_response: 'videos,release_dates,credits', include_video_language: 'ja,en,null' });
-      const f = shape(d, m, fromS, toS);
-      if (f && f.none) skipped++; else if (f) films.push(f);
-    } catch (e) { if (e.status === 401) throw e; }
-    onProgress(++done, list.length);
-  });
-  films.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : b.pop - a.pop);
-  return { v: CACHE_V, from: fromS, to: toS, today: iso(today), fetchedAt: Date.now(), films, skipped };
 }
 
 /* ---------- film text ---------- */
@@ -947,7 +836,7 @@ stage.addEventListener('wheel', e => {
 }, { passive: true });
 stage.addEventListener('contextmenu', e => e.preventDefault());
 addEventListener('keydown', e => {
-  if (!setup.hidden || !view.length || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (!view.length || e.metaKey || e.ctrlKey || e.altKey) return;
   const k = e.key;
   if (k === 'Escape') { if (sheetOpen) closeSheet(); else if (direct) exitDirect(true); return; }
   if (e.target.closest && e.target.closest('input,button,a') && (k === ' ' || k === 'Enter')) return;
@@ -988,8 +877,7 @@ function settingsHTML() {
   <label class="row" for="optFill"><span>映像を画面いっぱいに拡大する<small>上下が少し切れます。ピンチでも切り替えられます</small></span><input class="sw" type="checkbox" id="optFill"${prefs.fill ? ' checked' : ''}></label>
   ${coarse ? `<div class="row"><span>画面の向き<small>横画面は、本体の画面の回転ロックをオンにしてお使いください</small></span><button class="btn" type="button" data-act="mode">${prefs.mode === 'landscape' ? '縦画面にする' : '横画面にする'}</button></div>` : ''}
   ${coarse && prefs.mode === 'landscape' ? `<div class="row"><span>横画面で倒す向き<small>本体をどちらに倒して観るかを入れ替えます</small></span><button class="btn" type="button" data-act="flip">反対向きにする</button></div>` : ''}
-  <div class="row"><span>作品データ<small>${data.films.length}本を ${t.getHours()}:${pad(t.getMinutes())} に取得${data.skipped ? `、予告編のない${data.skipped}本は除外` : ''}</small></span><button class="btn" type="button" data-act="reload">更新する</button></div>
-  ${proxy ? '' : `<div class="row"><span>TMDB の API キー</span><button class="btn" type="button" data-act="rekey">変更する</button></div>`}
+  <div class="row"><span>作品データ<small>${data.films.length}本・${t.getMonth() + 1}月${t.getDate()}日 ${t.getHours()}:${pad(t.getMinutes())} 更新（毎朝自動で更新）</small></span><button class="btn" type="button" data-act="reload">読み込み直す</button></div>
   <div class="row"><span>音が出ないとき<small>映像を一度だけ直接タップして再生します</small></span><button class="btn" type="button" data-act="unlock">直接タップに切り替える</button></div>
   <p class="credit">作品情報と画像は TMDB から取得しています。This product uses the TMDB API but is not endorsed or certified by TMDB. 映像は YouTube の埋め込みプレイヤーで再生しています。</p>`;
 }
@@ -1022,7 +910,6 @@ function sheetAct(target, viaTouch) {
   if (act === 'mode') { closeSheet(); setMode(prefs.mode === 'landscape' ? 'portrait' : 'landscape'); }
   else if (act === 'flip') { prefs.flip = !prefs.flip; savePrefs(); layout(); if (!rot) toast('縦向きで開いたときに反映されます'); }
   else if (act === 'reload') { closeSheet(); start(true); }
-  else if (act === 'rekey') { closeSheet(); showSetup(''); }
   else if (act === 'unlock') {
     closeSheet();
     if (!P.ready) { toast('プレイヤーを準備しています'); return true; }
@@ -1080,68 +967,37 @@ onTap($('#scrimS'), closeSheet);
 onTap($('#bDirectOff'), () => exitDirect(true));
 onTap($('#chips'), e => { const b = e.target.closest('[data-f]'); if (b && b.dataset.f !== filter) setFilter(b.dataset.f); else setHud(true); });
 onTap($('#bRetry'), () => start(true));
-onTap($('#bRekey'), () => showSetup(''));
 
-/* ---------- loading, errors, setup ---------- */
+/* ---------- loading and errors ---------- */
 function veil(mode, info) {
   const v = $('#veil');
   if (!mode) { v.hidden = true; return; }
   v.hidden = false; v.dataset.mode = mode;
   const msg = $('#vmsg'), sub = $('#vsub');
-  if (mode === 'load') { msg.textContent = '予告編を集めています'; sub.textContent = '1か月前から2か月先までの公開作を TMDB から取得しています'; $('#vbar').style.width = '0'; }
-  else if (mode === 'empty') { msg.textContent = 'この期間に、予告編のある作品が見つかりませんでした'; sub.textContent = '時間をおいて、もう一度読み込んでください。'; }
-  else { msg.textContent = '作品データを取得できませんでした'; sub.textContent = proxy && info && (info.status === 401 || info.status === 503) ? 'サーバーに登録された TMDB のキーが使えませんでした。Cloudflare のシークレット TMDB_TOKEN を確認してください。' : info && info.status ? `TMDB からエラー ${info.status} が返りました。少し待ってから読み込み直してください。` : 'TMDB に接続できませんでした。通信状況を確認して、読み込み直してください。'; }
+  if (mode === 'load') { msg.textContent = '予告編を読み込んでいます'; sub.textContent = ''; $('#vbar').style.width = '40%'; }
+  else if (mode === 'empty') { msg.textContent = 'この期間に、予告編のある作品が見つかりませんでした'; sub.textContent = '作品データは毎朝更新されます。時間をおいて、もう一度読み込んでください。'; }
+  else { msg.textContent = '作品データを読み込めませんでした'; sub.textContent = info && info.status === 404 ? '作品データがまだ作られていません。GitHub の Actions で「Update films」を実行してください。' : info && info.status ? `エラー ${info.status} が返りました。少し待ってから読み込み直してください。` : '通信状況を確認して、読み込み直してください。'; }
 }
-function showSetup(err) {
-  stage.hidden = true; setup.hidden = false;
-  if (P.ready) { try { P.yt.pauseVideo(); } catch (e) {} }
-  $('#fileWarn').hidden = location.protocol !== 'file:';
-  const e = $('#serr'); e.hidden = !err; e.textContent = err || '';
-  $('#key').value = apiKey || '';
-}
-$('#keyForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const v = $('#key').value.trim(), btn = $('#bGo'), err = $('#serr');
-  if (!v) { err.hidden = false; err.textContent = 'API キーを入力してください。'; return; }
-  const prev = apiKey; apiKey = v;
-  btn.disabled = true; btn.textContent = '確認しています'; err.hidden = true;
-  try {
-    await tmdb('/configuration');
-    store.set('key', apiKey);
-    if (prev !== apiKey) store.del('cache');
-    $('#key').blur();
-    start(false);
-  } catch (x) {
-    apiKey = prev; err.hidden = false;
-    err.textContent = x.status === 401 ? 'このキーは TMDB に受け付けられませんでした。コピーし直して、もう一度入れてください。'
-      : x.status ? `TMDB からエラー ${x.status} が返りました。少し待ってから試してください。`
-      : 'TMDB に接続できませんでした。通信状況を確認してください。';
-  }
-  btn.disabled = false; btn.textContent = '予告を観る';
-});
 async function start(force) {
-  setup.hidden = true; stage.hidden = false; layout();
-  const cached = store.get('cache', null);
-  const usable = cached && cached.v === CACHE_V && cached.films && cached.films.length;
-  if (!force && usable && cached.today === todayS() && Date.now() - cached.fetchedAt < CACHE_TTL) { data = cached; ready(); return; }
-  veil('load');
+  stage.hidden = false; layout();
+  if (!data) veil('load');
   try {
-    data = await loadData((done, total) => {
-      $('#vbar').style.width = (total ? done / total * 100 : 0) + '%';
-      $('#vsub').textContent = `${done} / ${total} 本を確認しました`;
-    });
-    store.set('cache', data);
-    if (!data.films.length) { veil('empty'); return; }
-    ready();
+    const r = await fetch('data/films.json', { cache: force ? 'reload' : 'no-cache' });
+    if (!r.ok) { const e = new Error('films ' + r.status); e.status = r.status; throw e; }
+    const d = await r.json();
+    // the file is built each morning; keep today's window exactly
+    const t = startOfDay(new Date()), from = iso(addMonths(t, -1)), to = iso(addMonths(t, 2));
+    d.from = from; d.to = to; d.films = (d.films || []).filter(f => f.date >= from && f.date <= to);
+    data = d;
   } catch (e) {
-    if (e.status === 401 && !proxy) { showSetup('保存されていたキーが TMDB に受け付けられませんでした。もう一度入れてください。'); return; }
-    if (usable && cached.today === todayS()) { data = cached; ready(); toast('最新のデータを取得できなかったため、前回のデータを表示しています', 4000); return; }
-    veil('error', e);
+    if (data) { toast('作品データを読み込み直せませんでした', 3000); return; }
+    veil('error', e); return;
   }
+  if (!data.films.length) { veil('empty'); return; }
+  ready();
 }
 function ready() {
   veil(null);
-  $('#bRekey').hidden = proxy;
   for (const f of data.films) { f.vi = 0; f.blocked = false; f.tries = 0; }
   syncSound();
   setFilter('all', true);
@@ -1156,13 +1012,7 @@ addEventListener('resize', layout);
 addEventListener('orientationchange', () => setTimeout(layout, 80));
 if (window.visualViewport) visualViewport.addEventListener('resize', layout);
 layout();
-(async () => {
-  try {
-    const r = await fetch('/api/ping', { cache: 'no-store' });
-    if (r.ok && /json/.test(r.headers.get('content-type') || '')) proxy = (await r.json()).ok === true;
-  } catch (e) {}
-  if (proxy || apiKey) start(false); else showSetup('');
-})();
+start(false);
 })();
 </script>
 </body>

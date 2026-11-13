@@ -1,6 +1,0 @@
-.git
-.github
-.assetsignore
-worker.js
-wrangler.jsonc
-README.md
