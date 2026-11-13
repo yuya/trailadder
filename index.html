@@ -22,6 +22,30 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="preconnect" href="https://image.tmdb.org">
+<script>
+/* フォントの選択（設定画面。この端末に保存）。既定は cinemaladder と同じ端末標準のフォント */
+var FONTS = (function () {
+  var G = 'https://fonts.googleapis.com/css2?', A = '', i;
+  for (i = 32; i < 127; i++) A += String.fromCharCode(i);     // 英数字と記号（ASCII）だけを取り出す
+  var seedA = G + 'family=LINE+Seed+JP:wght@400;700&text=' + encodeURIComponent(A) + '&display=swap',
+      plex = G + 'family=IBM+Plex+Sans+JP:wght@300;400;500;600&display=swap';
+  return {
+    '':        { name: 'デフォルト', css: [], stack: '' },
+    urban:     { name: 'Urbanist → IBM Plex Sans JP', css: [G + 'family=Urbanist:wght@300;400;500;600&display=swap', plex], stack: '"Urbanist","IBM Plex Sans JP"' },
+    seed:      { name: 'LINE Seed JP', css: [G + 'family=LINE+Seed+JP:wght@400;700&display=swap'], stack: '"LINE Seed JP"' },
+    seedA:     { name: '英数字だけ LINE Seed JP', css: [seedA], stack: '"LINE Seed JP",var(--font0)' },
+    seedAplex: { name: '英数字だけ LINE Seed JP → IBM Plex Sans JP', css: [seedA, plex], stack: '"LINE Seed JP","IBM Plex Sans JP",var(--font0)' }
+  };
+})();
+function applyFont(k) {
+  var f = FONTS[k] || FONTS[''], r = document.documentElement;
+  document.querySelectorAll('link[data-font]').forEach(function (l) { l.remove(); });
+  f.css.forEach(function (u) { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = u; l.dataset.font = ''; document.head.appendChild(l); });
+  if (f.stack) r.style.setProperty('--font', f.stack + ',system-ui,sans-serif'); else r.style.removeProperty('--font');
+  r.dataset.font = FONTS[k] ? k : '';
+}
+(function () { var k = ''; try { k = localStorage.getItem('tl.font') || ''; } catch (e) {} applyFont(k); })();
+</script>
 <style>
 :root{
   /* 映像が全面。左下に公開日を大きく置き、最下段は電球の公開カレンダー（点灯＝公開済み、今日で灯りが止まる）。
@@ -32,7 +56,8 @@
   --bulb:#ffc93a;           /* 点灯した電球 */
   --silver:#b9bdc9;         /* 消灯した電球、銀幕 */
   /* cinemaladder と同じフォント指定 */
-  --font:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",Meiryo,system-ui,sans-serif;
+  --font0:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",Meiryo,system-ui,sans-serif;
+  --font:var(--font0);
   --display:var(--font);
   --ui:var(--font);
 }
@@ -214,6 +239,10 @@ a{color:inherit}
 .row small{display:block;font-size:11.5px;opacity:.66}
 .btn{flex:none;font:600 12.5px/1 var(--ui);padding:10px 14px;border-radius:99px;box-shadow:inset 0 0 0 1.2px rgba(255,245,220,.5)}
 .btn:active{background:rgba(255,245,220,.14)}
+.fontrow{display:grid;justify-content:stretch;gap:10px}
+.fonts{display:flex;flex-wrap:wrap;gap:6px}
+.fonts button{padding:8px 12px;border-radius:99px;box-shadow:inset 0 0 0 1.2px rgba(255,245,220,.4);font:400 12.5px/1.2 var(--ui);text-align:left}
+.fonts button[aria-pressed="true"]{background:var(--light);color:var(--curtain-deep);box-shadow:none}
 .sw{-webkit-appearance:none;appearance:none;flex:none;width:44px;height:26px;margin:0;border-radius:99px;background:rgba(255,245,220,.22);position:relative;transition:background .15s;cursor:pointer}
 .sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--light);transition:transform .15s}
 .sw:checked{background:var(--bulb)}
@@ -983,6 +1012,8 @@ function settingsHTML() {
   <label class="row" for="optFill"><span>映像を画面いっぱいに拡大する<small>上下が少し切れます。ピンチでも切り替えられます</small></span><input class="sw" type="checkbox" id="optFill"${prefs.fill ? ' checked' : ''}></label>
   ${coarse ? `<div class="row"><span>画面の向き<small>横画面は、本体の画面の回転ロックをオンにしてお使いください</small></span><button class="btn" type="button" data-act="mode">${prefs.mode === 'landscape' ? '縦画面にする' : '横画面にする'}</button></div>` : ''}
   ${coarse && prefs.mode === 'landscape' ? `<div class="row"><span>横画面で倒す向き<small>本体をどちらに倒して観るかを入れ替えます</small></span><button class="btn" type="button" data-act="flip">反対向きにする</button></div>` : ''}
+  <div class="row fontrow"><span>フォント<small>この端末に保存されます</small></span>
+    <div class="fonts">${Object.keys(FONTS).map(k => `<button type="button" data-act="font" data-v="${k}" aria-pressed="${(document.documentElement.dataset.font || '') === k}">${FONTS[k].name}</button>`).join('')}</div></div>
   <div class="row"><span>作品データ<small>${data.films.length}本・${t.getMonth() + 1}月${t.getDate()}日 ${t.getHours()}:${pad(t.getMinutes())} 更新（毎朝自動で更新）</small></span><button class="btn" type="button" data-act="reload">読み込み直す</button></div>
   <div class="row"><span>音が出ないとき<small>映像を一度だけ直接タップして再生します</small></span><button class="btn" type="button" data-act="unlock">直接タップに切り替える</button></div>
   <p class="credit">作品情報と画像は TMDB から取得しています。This product uses the TMDB API but is not endorsed or certified by TMDB. 映像は YouTube の埋め込みプレイヤーで再生しています。</p>`;
@@ -1024,6 +1055,11 @@ function sheetAct(target, viaTouch) {
   const act = b.dataset.act;
   if (act === 'mode') { closeSheet(); setMode(prefs.mode === 'landscape' ? 'portrait' : 'landscape'); }
   else if (act === 'flip') { prefs.flip = !prefs.flip; savePrefs(); layout(); if (!rot) toast('縦向きで開いたときに反映されます'); }
+  else if (act === 'font') {
+    const k = b.dataset.v; applyFont(k);
+    try { k ? localStorage.setItem('tl.font', k) : localStorage.removeItem('tl.font'); } catch (e) {}
+    b.parentNode.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  }
   else if (act === 'reload') { closeSheet(); start(true); }
   else if (act === 'unlock') {
     closeSheet();
