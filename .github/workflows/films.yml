@@ -1,4 +1,5 @@
 # Rebuilds data/films.json every morning (6:13 Japan time) from TMDB, using the repository secret TMDB_TOKEN.
+# With the secret DEEPL_API_KEY, synopses that exist only in English are machine-translated (see data/translations.json).
 # Pushing the new file is what republishes the site.
 name: Update films
 
@@ -30,9 +31,10 @@ jobs:
         run: node scripts/fetch-films.mjs
         env:
           TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
+          DEEPL_API_KEY: ${{ secrets.DEEPL_API_KEY }}
       - name: Commit the new data
         run: |
-          git add data/films.json
+          git add data/films.json data/translations.json
           if git diff --cached --quiet; then echo "No changes"; exit 0; fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'

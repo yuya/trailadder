@@ -1,10 +1,11 @@
 // Builds data/films.json: films opening in Japan from one month before to two months after today,
 // with their YouTube trailers. Run daily by .github/workflows/films.yml with the TMDB_TOKEN secret.
-import { writeFile, mkdir } from 'node:fs/promises';
+import { writeFile, readFile, mkdir } from 'node:fs/promises';
 
 const TOKEN = (process.env.TMDB_TOKEN || '').trim();
 if (!TOKEN) { console.error('TMDB_TOKEN is not set'); process.exit(1); }
 const TMDB = 'https://api.themoviedb.org/3';
+const DEEPL = (process.env.DEEPL_API_KEY || '').trim();   // optional: translate English synopses into Japanese
 const REGION = 'JP', LANG = 'ja-JP', MAX_PAGES = 12, POOL = 8;
 const TYPE_RANK = { Trailer: 0, Teaser: 1, Clip: 2, Featurette: 3 };
 // Same title rules as cinemaladder:
@@ -17,6 +18,21 @@ const RAD = { '⻁': '虎', '⻄': '西', '⻆': '角', '⻑': '長', '⻘': '�
 const fixRad = s => (s || '').replace(/[\u2F00-\u2FD5]/g, c => c.normalize('NFKC')).replace(/[\u2E80-\u2EFF]/g, c => RAD[c] || c.normalize('NFKC'));
 // - Genre names come from the id, not TMDB's Japanese labels (which have oddities such as History as 履歴).
 const GENRE_JA = { 28: 'アクション', 12: 'アドベンチャー', 16: 'アニメーション', 35: 'コメディ', 80: '犯罪', 99: 'ドキュメンタリー', 18: 'ドラマ', 10751: 'ファミリー', 14: 'ファンタジー', 36: '歴史', 27: 'ホラー', 10402: '音楽', 9648: 'ミステリー', 10749: 'ロマンス', 878: 'サイエンスフィクション', 10770: 'テレビ映画', 53: 'スリラー', 10752: '戦争', 37: '西部劇' };
+
+// Machine translation, as in cinemaladder: DeepL, kept only if it looks like Japanese.
+// Results live in data/translations.json, keyed by film and by a hash of the English text, so each synopsis is sent once.
+const looksJapanese = (ja, en) => !!ja && /[\u3040-\u30ff]/.test(ja) && ja.length > en.length * 0.15 && ja.length < en.length * 2;
+const hash = s => { let h = 0; for (const c of s) h = (h * 31 + c.codePointAt(0)) | 0; return (h >>> 0).toString(36); };
+async function deepl(texts) {
+  const host = DEEPL.endsWith(':fx') ? 'api-free.deepl.com' : 'api.deepl.com';   // free keys end in ":fx"
+  const res = await fetch(`https://${host}/v2/translate`, {
+    method: 'POST',
+    headers: { authorization: 'DeepL-Auth-Key ' + DEEPL, 'content-type': 'application/json' },
+    body: JSON.stringify({ text: texts, source_lang: 'EN', target_lang: 'JA' }),
+  });
+  if (!res.ok) throw new Error('DeepL ' + res.status);
+  return ((await res.json()).translations || []).map(t => (t.text || '').trim());
+}
 
 const pad = n => String(n).padStart(2, '0');
 const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -103,16 +119,42 @@ await pool(list, POOL, async m => {
     if (!readable(d.title)) { unreadable++; return; }
     if (!(d.overview || '').trim()) {   // no Japanese synopsis: fall back to the English one
       const en = await tmdb('/movie/' + m.id, { language: 'en-US' }).catch(() => null);
-      if (en && en.overview) d.overview = en.overview.trim();
+      if (en && en.overview) { d.overview = en.overview.trim(); d.ovLang = 'en'; }
     }
     const f = shape(d, m, fromS, toS);
+    if (f && !f.none && d.ovLang) f.ovLang = d.ovLang;
     if (f && f.none) skipped++; else if (f) films.push(f);
   } catch (e) { if (e.status === 401) throw e; failed++; console.warn(String(e)); }
 });
 if (films.length < 5) { console.error(`only ${films.length} films; keeping the previous data`); process.exit(1); }
 if (failed > list.length / 4) { console.error(`${failed} of ${list.length} lookups failed; keeping the previous data`); process.exit(1); }
+// translate the English synopses, reusing earlier translations
+let mt = {};
+try { mt = JSON.parse(await readFile('data/translations.json', 'utf8')); } catch (e) {}
+const keep = {}, todo = [];
+for (const f of films.filter(f => f.ovLang === 'en')) {
+  const h = hash(f.overview), hit = mt[f.id];
+  if (hit && hit.h === h) { keep[f.id] = hit; continue; }
+  if (DEEPL) todo.push(f);
+}
+let translated = 0;
+for (let i = 0; i < todo.length; i += 25) {
+  const batch = todo.slice(i, i + 25);
+  try {
+    const out = await deepl(batch.map(f => f.overview));
+    batch.forEach((f, k) => { if (looksJapanese(out[k], f.overview)) { keep[f.id] = { h: hash(f.overview), ja: out[k] }; translated++; } });
+  } catch (e) { console.warn(String(e)); break; }   // quota or key trouble: leave the rest in English
+}
+for (const f of films) {
+  if (f.ovLang !== 'en') continue;
+  const t = keep[f.id];
+  if (t) { f.overview = t.ja; f.ovLang = 'mt'; }
+}
+
 films.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : b.pop - a.pop || a.id - b.id);
 
 await mkdir('data', { recursive: true });
+await writeFile('data/translations.json', JSON.stringify(keep, null, 1) + '\n');
 await writeFile('data/films.json', JSON.stringify({ from: fromS, to: toS, today: iso(today), fetchedAt: Date.now(), films, skipped }) + '\n');
+console.log(`machine-translated ${translated} new synopses; ${Object.keys(keep).length} translations kept`);
 console.log(`${films.length} films with trailers (${skipped} without, ${unreadable} without a Japanese title, ${failed} failed) for ${fromS}..${toS}`);

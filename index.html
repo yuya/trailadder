@@ -173,6 +173,7 @@ a{color:inherit}
 .ihead h3{margin:0;font:800 21px/1.3 var(--display);text-wrap:balance}
 .iorig,.isub{margin:3px 0 0;font:500 12px/1.5 var(--ui);opacity:.76}
 .overview{margin:0;font:500 13.5px/1.85 var(--ui)}
+.ovnote{margin:-6px 0 0;font:500 11.5px/1.6 var(--ui);opacity:.6}
 .credits{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font:500 12.5px/1.6 var(--ui)}
 .credits dt{opacity:.66}
 .credits dd{margin:0}
@@ -221,6 +222,7 @@ a{color:inherit}
 #stage.tall .slide .amb{position:absolute;inset:-25%;background:#000 center/cover no-repeat;filter:blur(30px) brightness(.34) saturate(1.2)}
 #stage.tall .meta{top:calc(var(--vb) + 18px);bottom:calc(var(--railh) + var(--gb) + 40px);right:var(--gr);max-width:none;gap:8px;overflow:hidden;
   -webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(to bottom,#000 calc(100% - 28px),transparent)}
+#stage.tall .meta>*{flex-shrink:0}   /* a long synopsis is cut off by the mask; the title never gives way */
 #stage.tall .when{max-width:none}
 #stage.tall .date{font-size:58px}
 #stage.tall .title{font-size:25px}
@@ -864,6 +866,7 @@ function infoHTML(f) {
     </div>
   </div>
   <p class="overview">${f.overview ? esc(f.overview) : 'あらすじは TMDB にまだ登録されていません。'}</p>
+  ${f.ovLang === 'mt' ? '<p class="ovnote">英語のあらすじを機械翻訳しています</p>' : f.ovLang === 'en' ? '<p class="ovnote">日本語のあらすじが未登録のため、英語で表示しています</p>' : ''}
   ${f.director.length || f.cast.length ? `<dl class="credits">${f.director.length ? `<dt>監督</dt><dd>${esc(f.director.join('、'))}</dd>` : ''}${f.cast.length ? `<dt>出演</dt><dd>${esc(f.cast.join('、'))}</dd>` : ''}</dl>` : ''}
   <h4>この作品の映像</h4>
   <ul class="vids">${f.vids.map((v, i) => `<li><button type="button" data-vi="${i}" aria-current="${i === vi}">${esc(v.name || vidLabel(v))}<span>${esc(vidLabel(v))}</span></button></li>`).join('')}</ul>
