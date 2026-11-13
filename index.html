@@ -39,9 +39,6 @@
   --ui:"Urbanist","IBM Plex Sans JP",system-ui,sans-serif;
 }
 .date{letter-spacing:-.02em}
-.pc,.po{font-feature-settings:"palt" 0}
-.pc{margin-right:-.5em}
-.po{margin-left:-.5em}
 .title,.ihead h3{font-weight:600}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -394,14 +391,6 @@ const $ = (s, r = document) => r.querySelector(s);
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-/* 和文の句読点・括弧の余白を詰める（palt が効かない環境でも同じ詰まり方にするため、文字ごとに半角分を削る） */
-const tight = s => { const t = String(s == null ? '' : s), C = '、。，．', E = '」』）】〉》', O = '「『（【〈《'; let o = '';
-  for (let i = 0; i < t.length; i++) { const c = t[i], n = t[i + 1] || '';
-    // 閉じ括弧の直後が句読点、句読点の直後が開き括弧のときは、重なるので片方だけ詰める
-    if (C.includes(c) || (E.includes(c) && !C.includes(n))) o += `<span class="pc">${esc(c)}</span>`;
-    else if (O.includes(c) && i && !C.includes(t[i - 1])) o += `<span class="po">${esc(c)}</span>`;
-    else o += esc(c); }
-  return o; };
 const pad = n => String(n).padStart(2, '0');
 const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const parseISO = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
@@ -532,9 +521,9 @@ function paint(el, f) {
   $('.date', el).textContent = `${d.getMonth() + 1}.${d.getDate()}`;
   $('.dow', el).textContent = DOW[d.getDay()];
   const s = $('.state', el); s.textContent = st.text; s.className = 'state ' + (st.lit ? 'lit' : 'unlit');
-  $('.title', el).innerHTML = tight(f.title);
+  $('.title', el).textContent = f.title;
   $('.sub', el).textContent = subOf(f);
-  $('.ov', el).innerHTML = tight(f.overview || '');
+  $('.ov', el).textContent = f.overview || '';
   $('.amb', el).style.backgroundImage = `url("${f.backdrop ? IMG + 'w300' + f.backdrop : bgUrl(f)}")`;
 }
 const at = i => { const n = view.length; return n ? view[((i % n) + n) % n] : null; };
@@ -964,7 +953,7 @@ function infoHTML(f) {
     return `
   <div class="imeta">
     <p class="when"><span class="date">${d.getMonth() + 1}.${d.getDate()}</span><span class="dow">${DOW[d.getDay()]}</span><span class="state ${st.lit ? 'lit' : 'unlit'}">${st.text}</span></p>
-    <h2 class="title">${tight(f.title)}</h2>
+    <h2 class="title">${esc(f.title)}</h2>
     <p class="sub">${esc(subOf(f))}</p>
   </div>${detailsHTML(f, vi)}`;
   }
@@ -973,7 +962,7 @@ function infoHTML(f) {
     ${f.poster ? `<img class="poster" src="${IMG}w185${esc(f.poster)}" alt="">` : ''}
     <div>
       <p class="idate">${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日（${DOW[d.getDay()]}）公開</p>
-      <h3>${tight(f.title)}</h3>
+      <h3>${esc(f.title)}</h3>
       ${f.otitle && f.otitle !== f.title ? `<p class="iorig">${esc(f.otitle)}</p>` : ''}
       <p class="isub">${esc(subOf(f))}</p>
     </div>
@@ -982,7 +971,7 @@ function infoHTML(f) {
 function detailsHTML(f, vi) {
   const orig = stage.classList.contains('inl') && f.otitle && f.otitle !== f.title;   // in portrait the header mirrors the film card, so the original title sits here
   return `
-  <p class="overview">${f.overview ? tight(f.overview) : f.archived ? '掲載期間を過ぎた作品のため、あらすじは表示していません。' : 'あらすじは TMDB にまだ登録されていません。'}</p>
+  <p class="overview">${f.overview ? esc(f.overview) : f.archived ? '掲載期間を過ぎた作品のため、あらすじは表示していません。' : 'あらすじは TMDB にまだ登録されていません。'}</p>
   ${f.ovLang === 'mt' ? '<p class="ovnote">英語のあらすじを機械翻訳しています</p>' : f.ovLang === 'en' ? '<p class="ovnote">日本語のあらすじが未登録のため、英語で表示しています</p>' : ''}
   ${f.director.length || f.cast.length || orig ? `<dl class="credits">${orig ? `<dt>原題</dt><dd>${esc(f.otitle)}</dd>` : ''}${f.director.length ? `<dt>監督</dt><dd>${esc(f.director.join('、'))}</dd>` : ''}${f.cast.length ? `<dt>出演</dt><dd>${esc(f.cast.join('、'))}</dd>` : ''}</dl>` : ''}
   <h4>この作品の映像</h4>
