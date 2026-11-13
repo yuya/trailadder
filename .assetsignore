@@ -6,3 +6,4 @@ scripts
 README.md
 CLAUDE.md
 node_modules
+worker.js

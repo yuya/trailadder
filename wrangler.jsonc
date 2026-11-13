@@ -1,8 +1,9 @@
 {
-  // Cloudflare Workers Builds deploys this repository as a static site (no Worker code).
-  // The name must match the Worker in the Cloudflare dashboard.
+  // Cloudflare Workers Builds deploys this repository: static files from the repository root, and worker.js only
+  // for the top page (/), where it adds link previews for ?f=<film>. The name must match the Worker in the dashboard.
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "trailadder",
+  "main": "worker.js",
   "compatibility_date": "2026-06-01",
-  "assets": { "directory": "./" }
+  "assets": { "directory": "./", "binding": "ASSETS", "run_worker_first": ["/"] }
 }
