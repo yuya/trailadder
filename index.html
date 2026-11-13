@@ -21,10 +21,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://image.tmdb.org">
-<link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600&family=IBM+Plex+Sans+JP:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
   /* 映像が全面。左下に公開日を大きく置き、最下段は電球の公開カレンダー（点灯＝公開済み、今日で灯りが止まる）。
@@ -34,11 +31,11 @@
   --light:#fff5dc;          /* 映写機の光 */
   --bulb:#ffc93a;           /* 点灯した電球 */
   --silver:#b9bdc9;         /* 消灯した電球、銀幕 */
-  /* 欧文は Urbanist、和文は IBM Plex Sans JP */
-  --display:"Urbanist","IBM Plex Sans JP",system-ui,sans-serif;
-  --ui:"Urbanist","IBM Plex Sans JP",system-ui,sans-serif;
+  /* cinemaladder と同じフォント指定 */
+  --font:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",Meiryo,system-ui,sans-serif;
+  --display:var(--font);
+  --ui:var(--font);
 }
-.date{letter-spacing:-.02em}
 .title,.ihead h3{font-weight:600}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
