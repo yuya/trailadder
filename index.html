@@ -24,23 +24,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://image.tmdb.org">
-<link id="fontcss" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@800&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
-<script>
-/* Font trial: ?font=<preset> or the choice in Settings. Each preset loads only its own fonts. */
-(function () {
-  var P = {
-    plex:   'family=IBM+Plex+Sans+JP:wght@500;700',
-    jost:   'family=Jost:wght@500;600;700&family=Noto+Sans+JP:wght@500;700',
-    urban:  'family=Urbanist:wght@500;700;800&family=M+PLUS+1p:wght@500;700',
-    oswald: 'family=Oswald:wght@500;600&family=Noto+Sans+JP:wght@500;700'
-  };
-  var f = null;
-  try { f = new URLSearchParams(location.search).get('font') || localStorage.getItem('tl.font'); } catch (e) {}
-  if (!P[f]) return;
-  document.documentElement.dataset.font = f;
-  document.getElementById('fontcss').href = 'https://fonts.googleapis.com/css2?' + P[f] + '&display=swap';
-})();
-</script>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@500;600;700;800&family=IBM+Plex+Sans+JP:wght@500;700&display=swap" rel="stylesheet">
 <style>
 :root{
   /* 映像が全面。左下に公開日を大きく置き、最下段は電球の公開カレンダー（点灯＝公開済み、今日で灯りが止まる）。
@@ -50,20 +34,12 @@
   --light:#fff5dc;          /* 映写機の光 */
   --bulb:#ffc93a;           /* 点灯した電球 */
   --silver:#b9bdc9;         /* 消灯した電球、銀幕 */
-  --display:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho","Noto Serif CJK JP",serif;
-  --ui:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic UI","Noto Sans CJK JP",system-ui,sans-serif;
+  /* 欧文は Futura（Apple 端末の標準フォント）→ Jost（Futura 系の無料版）の順。和文は IBM Plex Sans JP */
+  --display:"Futura","Jost","IBM Plex Sans JP",system-ui,sans-serif;
+  --ui:"Futura","Jost","IBM Plex Sans JP",system-ui,sans-serif;
 }
-/* font trial presets (see the script in <head>) */
-:root[data-font="plex"]{--display:"IBM Plex Sans JP",sans-serif;--ui:"IBM Plex Sans JP",sans-serif}
-:root[data-font="jost"]{--display:"Jost","Noto Sans JP",sans-serif;--ui:"Jost","Noto Sans JP",sans-serif}
-:root[data-font="urban"]{--display:"Urbanist","M PLUS 1p",sans-serif;--ui:"Urbanist","M PLUS 1p",sans-serif}
-:root[data-font="oswald"]{--display:"Oswald","Noto Sans JP",sans-serif;--ui:"Noto Sans JP",sans-serif}
-:root[data-font="plex"] .date,:root[data-font="jost"] .date,:root[data-font="urban"] .date{letter-spacing:-.03em}
-:root[data-font="oswald"] .date{letter-spacing:0}
-:root[data-font] .title,:root[data-font] .ihead h3{font-weight:700}
-.fonts{display:flex;flex-wrap:wrap;gap:6px}
-.fonts button{padding:8px 12px;border-radius:99px;box-shadow:inset 0 0 0 1.2px rgba(255,245,220,.4);font-size:12.5px;line-height:1}
-.fonts button[aria-pressed="true"]{background:var(--light);color:var(--curtain-deep);box-shadow:none}
+.date{letter-spacing:-.03em}
+.title,.ihead h3{font-weight:700}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{margin:0;height:100%;background:#000}
@@ -1010,8 +986,6 @@ function settingsHTML() {
   <label class="row" for="optFill"><span>映像を画面いっぱいに拡大する<small>上下が少し切れます。ピンチでも切り替えられます</small></span><input class="sw" type="checkbox" id="optFill"${prefs.fill ? ' checked' : ''}></label>
   ${coarse ? `<div class="row"><span>画面の向き<small>横画面は、本体の画面の回転ロックをオンにしてお使いください</small></span><button class="btn" type="button" data-act="mode">${prefs.mode === 'landscape' ? '縦画面にする' : '横画面にする'}</button></div>` : ''}
   ${coarse && prefs.mode === 'landscape' ? `<div class="row"><span>横画面で倒す向き<small>本体をどちらに倒して観るかを入れ替えます</small></span><button class="btn" type="button" data-act="flip">反対向きにする</button></div>` : ''}
-  <div class="row" style="display:grid;justify-content:stretch"><span>フォント（お試し）<small>見比べるための一時的な切り替えです。この端末に保存されます</small></span>
-    <div class="fonts">${[['', '明朝＋角ゴシック（今）'], ['plex', 'IBM Plex Sans JP'], ['jost', 'Jost＋Noto Sans JP'], ['urban', 'Urbanist＋M PLUS 1p'], ['oswald', 'Oswald＋Noto Sans JP']].map(([k, n]) => `<button type="button" data-act="font" data-v="${k}" aria-pressed="${(document.documentElement.dataset.font || '') === k}">${n}</button>`).join('')}</div></div>
   <div class="row"><span>作品データ<small>${data.films.length}本・${t.getMonth() + 1}月${t.getDate()}日 ${t.getHours()}:${pad(t.getMinutes())} 更新（毎朝自動で更新）</small></span><button class="btn" type="button" data-act="reload">読み込み直す</button></div>
   <div class="row"><span>音が出ないとき<small>映像を一度だけ直接タップして再生します</small></span><button class="btn" type="button" data-act="unlock">直接タップに切り替える</button></div>
   <p class="credit">作品情報と画像は TMDB から取得しています。This product uses the TMDB API but is not endorsed or certified by TMDB. 映像は YouTube の埋め込みプレイヤーで再生しています。</p>`;
@@ -1051,11 +1025,6 @@ function sheetAct(target, viaTouch) {
     return true;
   }
   const act = b.dataset.act;
-  if (act === 'font') {
-    try { b.dataset.v ? localStorage.setItem('tl.font', b.dataset.v) : localStorage.removeItem('tl.font'); } catch (e) {}
-    const u = new URL(location.href); u.searchParams.delete('font'); location.replace(u.href);   // reload with the new fonts
-    return true;
-  }
   if (act === 'mode') { closeSheet(); setMode(prefs.mode === 'landscape' ? 'portrait' : 'landscape'); }
   else if (act === 'flip') { prefs.flip = !prefs.flip; savePrefs(); layout(); if (!rot) toast('縦向きで開いたときに反映されます'); }
   else if (act === 'reload') { closeSheet(); start(true); }
