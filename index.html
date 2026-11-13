@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>trailadder</title>
-<meta name="description" content="公開前後1か月の映画の予告編を、公開日順にスワイプで観る。">
+<meta name="description" content="公開から1か月以内の映画と、2か月先までの公開予定作の予告編を、公開日順にスワイプで観る。">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="theme-color" content="#000000">
@@ -44,7 +44,7 @@ a{color:inherit}
 
 /* ---------- stage: always landscape ---------- */
 #stage{position:absolute;top:0;left:0;width:100vw;height:100vh;transform-origin:0 0;overflow:hidden;background:#000;
-  --W:100vw;--H:100vh;--railh:62px;
+  --W:100vw;--H:100vh;--railh:62px;--mid:42%;
   --il:env(safe-area-inset-left,0px);--ir:env(safe-area-inset-right,0px);--it:env(safe-area-inset-top,0px);--ib:env(safe-area-inset-bottom,0px);
   --gl:max(18px,var(--il));--gr:max(18px,var(--ir));--gt:max(8px,var(--it));--gb:max(10px,var(--ib))}
 #stage.cw{--il:env(safe-area-inset-top,0px);--ir:env(safe-area-inset-bottom,0px);--it:env(safe-area-inset-right,0px);--ib:env(safe-area-inset-left,0px)}
@@ -60,6 +60,7 @@ a{color:inherit}
 .slide{position:absolute;inset:0;overflow:hidden}
 .slide[data-role="prev"]{transform:translateX(-100%)}
 .slide[data-role="next"]{transform:translateX(100%)}
+.slide .ambw,.slide .ov{display:none}
 .slide .bg{position:absolute;inset:0;background:#000 center/cover no-repeat;transition:opacity .35s}
 .slide.live .bg{opacity:0}
 .slide .scrim{position:absolute;inset:0;background:
@@ -104,23 +105,20 @@ a{color:inherit}
 #stage.muted #bSound svg{width:20px;height:20px}
 #stage.muted #bSound .on,#stage:not(.muted) #bSound .off{display:none}
 #stage.fill #bFill .out,#stage:not(.fill) #bFill .in{display:none}
+#stage.tall #bFill{display:none}
 #stage.narrow .chip small{display:none}
 #stage.narrow .chip{padding:0 10px}
 #stage.narrow.muted #bSound span{display:none}
 #stage.narrow.muted #bSound{width:38px;padding:0}
 
-#bPlay{position:absolute;z-index:4;left:50%;top:42%;width:66px;height:66px;margin:-33px 0 0 -33px;border-radius:50%;display:grid;place-items:center;
-  background:rgba(0,0,0,.45);box-shadow:inset 0 0 0 1.5px rgba(255,245,220,.6);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
-#bPlay svg{width:28px;height:28px;fill:currentColor}
-#stage.playing #bPlay .play,#stage:not(.playing) #bPlay .pause{display:none}
-#bPlay em{display:none;position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);white-space:nowrap;font:700 12px/1 var(--ui);font-style:normal;text-shadow:0 1px 6px #000}
-#stage.stalled #bPlay em{display:block}
-#stage.blocked #bPlay,#stage.direct #bPlay{display:none}
-#blockmsg{display:none;position:absolute;z-index:4;left:50%;top:42%;transform:translate(-50%,-50%);text-align:center;font:700 13px/1.7 var(--ui);background:rgba(0,0,0,.6);padding:12px 18px;border-radius:14px;max-width:70%}
+#hint{display:none;position:absolute;z-index:4;left:50%;top:var(--mid);transform:translate(-50%,-50%);margin:0;pointer-events:none;white-space:nowrap;
+  font:700 13px/1 var(--ui);background:rgba(0,0,0,.62);padding:10px 16px;border-radius:99px}
+#stage.stalled:not(.blocked):not(.direct) #hint{display:block}
+#blockmsg{display:none;position:absolute;z-index:4;left:50%;top:var(--mid);transform:translate(-50%,-50%);text-align:center;font:700 13px/1.7 var(--ui);background:rgba(0,0,0,.6);padding:12px 18px;border-radius:14px;max-width:70%}
 #stage.blocked #blockmsg{display:block}
 #blockmsg a{display:inline-block;margin-top:6px;color:var(--bulb)}
 
-.edge{position:absolute;z-index:4;top:42%;width:44px;height:64px;margin-top:-32px;display:grid;place-items:center;border-radius:12px}
+.edge{position:absolute;z-index:4;top:var(--mid);width:44px;height:64px;margin-top:-32px;display:grid;place-items:center;border-radius:12px}
 .edge svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 1px 4px #000)}
 #bPrev{left:calc(var(--gl) - 12px)}
 #bNext{right:calc(var(--gr) - 12px)}
@@ -148,9 +146,10 @@ a{color:inherit}
 .axis .now{opacity:1;font-weight:700}
 .bubble{position:absolute;bottom:calc(100% + 6px);transform:translateX(-50%);background:var(--light);color:var(--curtain-deep);font:700 12px/1 var(--ui);padding:7px 10px;border-radius:8px;white-space:nowrap;pointer-events:none}
 
-#seekfx{position:absolute;z-index:3;top:42%;width:96px;height:96px;margin-top:-48px;border-radius:50%;background:rgba(0,0,0,.55);display:grid;place-items:center;font:700 12.5px/1 var(--ui);opacity:0;pointer-events:none}
+#seekfx{position:absolute;z-index:3;top:var(--mid);width:96px;height:96px;margin-top:-48px;border-radius:50%;background:rgba(0,0,0,.55);display:grid;place-items:center;font:700 12.5px/1 var(--ui);opacity:0;pointer-events:none}
 #seekfx.l{left:12%}
 #seekfx.r{right:12%}
+#seekfx.c{left:50%;margin-left:-48px}
 #seekfx.on{animation:seek .6s}
 @keyframes seek{0%{opacity:0;transform:scale(.8)}25%{opacity:1;transform:none}100%{opacity:0}}
 
@@ -226,6 +225,31 @@ a{color:inherit}
 .help a{text-underline-offset:3px}
 #fileWarn{margin:0;padding:12px 14px;border-radius:10px;background:rgba(0,0,0,.32);font:500 12.5px/1.8 var(--ui)}
 
+/* ---------- portrait layout: video band on top, the film below it ---------- */
+#stage.tall{--railh:70px;--vt:calc(var(--gt) + 88px);--vh:calc(var(--W) * 9 / 16);--vb:calc(var(--vt) + var(--vh));--mid:calc(var(--vt) + var(--vh) / 2)}
+#stage.tall:not(.hud) .h{opacity:1;pointer-events:auto}
+#stage.tall #top{height:auto;flex-wrap:wrap;row-gap:4px;padding-bottom:0}
+#stage.tall .chips{order:3;width:100%}
+#stage.tall #ambient{display:none}
+#stage.tall #ytbox{left:0;top:var(--vt);transform:none}
+#stage.tall .slide .bg{top:var(--vt);height:var(--vh);bottom:auto}
+#stage.tall .slide .scrim{display:none}
+#stage.tall .slide .ambw{display:block;position:absolute;left:0;right:0;top:var(--vb);bottom:0;overflow:hidden}
+#stage.tall .slide .amb{position:absolute;inset:-25%;background:#000 center/cover no-repeat;filter:blur(30px) brightness(.34) saturate(1.2)}
+#stage.tall .meta{top:calc(var(--vb) + 18px);bottom:calc(var(--railh) + var(--gb) + 40px);right:var(--gr);max-width:none;gap:8px;overflow:hidden;
+  -webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(to bottom,#000 calc(100% - 28px),transparent)}
+#stage.tall .when{max-width:none}
+#stage.tall .date{font-size:58px}
+#stage.tall .title{font-size:25px}
+#stage.tall .slide .ov{display:block;margin:6px 0 0;font:500 13px/1.85 var(--ui);opacity:.84}
+#stage.tall #vinfo{left:var(--gl);display:flex;align-items:baseline;gap:14px;text-align:left}
+#stage.tall #vopen{margin-left:auto}
+#stage.tall .day i{width:3.5px;height:3.5px}
+#stage.tall #sheet{top:auto;left:0;right:0;width:auto;height:min(74%,680px);transform:translateY(104%);border-radius:16px 16px 0 0;box-shadow:0 -14px 44px rgba(0,0,0,.55)}
+#stage.tall.sheet #sheet{transform:none}
+
+#stage.tall #toast,#stage.tall #direct{top:calc(var(--vt) + 14px)}
+
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition-duration:.01ms!important}
 }
@@ -237,9 +261,9 @@ a{color:inherit}
   <div id="player"><div id="ambient"></div><div id="ytbox"><div id="yt"></div></div></div>
 
   <div id="track">
-    <article class="slide" data-role="prev"><div class="bg"></div><div class="scrim h"></div><div class="meta h"><p class="when"><span class="date"></span><span class="dow"></span><span class="state"></span></p><h2 class="title"></h2><p class="sub"></p></div></article>
-    <article class="slide" data-role="cur"><div class="bg"></div><div class="scrim h"></div><div class="meta h"><p class="when"><span class="date"></span><span class="dow"></span><span class="state"></span></p><h2 class="title"></h2><p class="sub"></p></div></article>
-    <article class="slide" data-role="next"><div class="bg"></div><div class="scrim h"></div><div class="meta h"><p class="when"><span class="date"></span><span class="dow"></span><span class="state"></span></p><h2 class="title"></h2><p class="sub"></p></div></article>
+    <article class="slide" data-role="prev"><div class="ambw"><div class="amb"></div></div><div class="bg"></div><div class="scrim h"></div><div class="meta h"><p class="when"><span class="date"></span><span class="dow"></span><span class="state"></span></p><h2 class="title"></h2><p class="sub"></p><p class="ov"></p></div></article>
+    <article class="slide" data-role="cur"><div class="ambw"><div class="amb"></div></div><div class="bg"></div><div class="scrim h"></div><div class="meta h"><p class="when"><span class="date"></span><span class="dow"></span><span class="state"></span></p><h2 class="title"></h2><p class="sub"></p><p class="ov"></p></div></article>
+    <article class="slide" data-role="next"><div class="ambw"><div class="amb"></div></div><div class="bg"></div><div class="scrim h"></div><div class="meta h"><p class="when"><span class="date"></span><span class="dow"></span><span class="state"></span></p><h2 class="title"></h2><p class="sub"></p><p class="ov"></p></div></article>
   </div>
 
   <div id="gest" aria-hidden="true"></div>
@@ -258,6 +282,9 @@ a{color:inherit}
         <svg class="out" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4"/></svg>
         <svg class="in" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v4H4M16 5v4h4M8 19v-4H4M16 19v-4h4"/></svg>
       </button>
+      <button class="ib" id="bOrient" type="button" aria-label="横画面にする">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M3 14a8 8 0 004 6M2 17l1-3 3 1"/></svg>
+      </button>
       <button class="ib" id="bInfo" type="button" aria-label="作品の詳細を開く">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg>
       </button>
@@ -267,11 +294,7 @@ a{color:inherit}
     </div>
   </header>
 
-  <button id="bPlay" class="h" type="button" aria-label="再生と一時停止を切り替える">
-    <svg class="play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l12 7-12 7z"/></svg>
-    <svg class="pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
-    <em>タップで再生</em>
-  </button>
+  <p id="hint" class="h">映像をタップすると再生します</p>
   <div id="blockmsg" class="h">この予告は埋め込みでは再生できません<br><a id="blockopen" target="_blank" rel="noopener">YouTube で開く</a></div>
   <button class="edge h" id="bPrev" type="button" aria-label="前の作品へ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
   <button class="edge h" id="bNext" type="button" aria-label="次の作品へ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
@@ -306,7 +329,7 @@ a{color:inherit}
   <div class="sin">
     <h1>trailadder</h1>
     <p class="tag">予告を、ヨコで。</p>
-    <p class="lead">公開前後1か月の映画の予告編を、公開日順にスワイプで次々観られます。縦向きにロックしたままでも、画面は横いっぱいに使います。</p>
+    <p class="lead">公開から1か月以内の映画と、2か月先までの公開予定作の予告編を、公開日順にスワイプで次々観られます。縦画面のほか、縦向きにロックしたまま横いっぱいに使う横画面にも切り替えられます。</p>
     <p id="fileWarn" hidden>このファイルを端末から直接開いています。YouTube は https で公開されたページでしか再生を許可しないため、GitHub Pages などに置いてから開いてください。</p>
     <form id="keyForm" autocomplete="off">
       <label for="key">TMDB の API キー</label>
@@ -326,7 +349,7 @@ a{color:inherit}
 const TMDB = 'https://api.themoviedb.org/3';
 const IMG = 'https://image.tmdb.org/t/p/';
 const REGION = 'JP', LANG = 'ja-JP';
-const MAX_PAGES = 8, POOL = 8, CACHE_TTL = 6 * 36e5, CACHE_V = 1, HOT_N = 20, MAXDOT = 5;
+const MAX_PAGES = 12, POOL = 8, CACHE_TTL = 6 * 36e5, CACHE_V = 2, HOT_N = 20, MAXDOT = 5;
 const NS = 'trailadder.';
 const DOW = ['日', '月', '火', '水', '木', '金', '土'];
 const TYPE_JA = { Trailer: '予告編', Teaser: '特報', Clip: '本編映像', Featurette: '特別映像', 'Behind the Scenes': 'メイキング', Bloopers: 'NG集', 'Opening Credits': 'オープニング' };
@@ -380,7 +403,7 @@ const sheet = $('#sheet'), sheetBody = $('#sheetBody'), setup = $('#setup');
 const slides = [...document.querySelectorAll('.slide')];
 const roles = { prev: slides[0], cur: slides[1], next: slides[2] };
 
-const prefs = Object.assign({ flip: false, fill: false, autoNext: true }, store.get('prefs', {}));
+const prefs = Object.assign({ mode: 'portrait', flip: false, fill: false, autoNext: true }, store.get('prefs', {}));
 const savePrefs = () => store.set('prefs', prefs);
 let apiKey = store.get('key', '');
 let data = null;          // { from, to, today, fetchedAt, films, skipped }
@@ -397,18 +420,24 @@ const coarse = matchMedia('(pointer:coarse)').matches;
 function layout() {
   VW = window.innerWidth; VH = window.innerHeight;
   const portrait = coarse && VH > VW;
-  rot = portrait ? (prefs.flip ? -90 : 90) : 0;
-  W = portrait ? VH : VW; H = portrait ? VW : VH;
+  rot = portrait && prefs.mode === 'landscape' ? (prefs.flip ? -90 : 90) : 0;
+  W = rot ? VH : VW; H = rot ? VW : VH;
   stage.style.width = W + 'px'; stage.style.height = H + 'px';
   stage.style.transform = rot === 90 ? `translate(${VW}px,0) rotate(90deg)` : rot === -90 ? `translate(0,${VH}px) rotate(-90deg)` : 'none';
   stage.classList.toggle('cw', rot === 90);
   stage.classList.toggle('ccw', rot === -90);
   stage.classList.toggle('narrow', W < 760);
+  stage.classList.toggle('tall', !rot && H > W);
+  const bo = $('#bOrient');
+  bo.hidden = !coarse;
+  bo.setAttribute('aria-label', prefs.mode === 'landscape' ? '縦画面にする' : '横画面にする');
   stage.style.setProperty('--W', W + 'px');
   stage.style.setProperty('--H', H + 'px');
   sizePlayer();
+  if (data && view.length) { buildRail(); markRail(); }
 }
 function sizePlayer() {
+  if (stage.classList.contains('tall')) { ytbox.style.width = W + 'px'; ytbox.style.height = (W * 9 / 16) + 'px'; return; }
   const pw = prefs.fill ? Math.max(W, H * 16 / 9) : Math.min(W, H * 16 / 9);
   ytbox.style.width = pw + 'px'; ytbox.style.height = (pw * 9 / 16) + 'px';
   stage.classList.toggle('fill', !!prefs.fill);
@@ -477,7 +506,7 @@ function shape(d, m, fromS, toS) {
 }
 async function loadData(onProgress) {
   const today = startOfDay(new Date());
-  const fromS = iso(addMonths(today, -1)), toS = iso(addMonths(today, 1));
+  const fromS = iso(addMonths(today, -1)), toS = iso(addMonths(today, 2));
   const base = { region: REGION, language: LANG, include_adult: 'false', include_video: 'false', with_release_type: '2|3', 'release_date.gte': fromS, 'release_date.lte': toS, sort_by: 'popularity.desc' };
   const first = await tmdb('/discover/movie', Object.assign({ page: 1 }, base));
   const pages = Math.min(first.total_pages || 1, MAX_PAGES);
@@ -534,9 +563,13 @@ function paint(el, f) {
   const s = $('.state', el); s.textContent = st.text; s.className = 'state ' + (st.lit ? 'lit' : 'unlit');
   $('.title', el).textContent = f.title;
   $('.sub', el).textContent = subOf(f);
+  $('.ov', el).textContent = f.overview || '';
+  $('.amb', el).style.backgroundImage = `url("${f.backdrop ? IMG + 'w300' + f.backdrop : bgUrl(f)}")`;
 }
+const at = i => { const n = view.length; return n ? view[((i % n) + n) % n] : null; };
+const side = i => view.length > 1 ? at(i) : null;
 function setRoles() { for (const k in roles) roles[k].dataset.role = k; }
-function renderAll() { paint(roles.prev, view[idx - 1]); paint(roles.cur, view[idx]); paint(roles.next, view[idx + 1]); setRoles(); }
+function renderAll() { paint(roles.prev, side(idx - 1)); paint(roles.cur, view[idx]); paint(roles.next, side(idx + 1)); setRoles(); }
 function setX(x, animate) {
   const t = animate ? 'transform 260ms cubic-bezier(.2,.8,.2,1)' : 'none';
   const tr = `translate3d(${x}px,0,0)`;
@@ -545,8 +578,7 @@ function setX(x, animate) {
 }
 function go(dir) {
   if (animating) finalize();
-  const target = idx + dir;
-  if (target < 0 || target >= view.length) { bump(dir); return; }
+  if (view.length < 2) { bump(dir); return; }
   animating = true; pendingDir = dir;
   setX(-dir * W, true);
   animT = setTimeout(finalize, 290);
@@ -554,14 +586,15 @@ function go(dir) {
 function finalize() {
   if (!animating) return;
   clearTimeout(animT); animating = false;
-  const dir = pendingDir; pendingDir = 0; idx += dir;
-  if (dir > 0) { const old = roles.prev; roles.prev = roles.cur; roles.cur = roles.next; roles.next = old; paint(old, view[idx + 1]); }
-  else { const old = roles.next; roles.next = roles.cur; roles.cur = roles.prev; roles.prev = old; paint(old, view[idx - 1]); }
+  const dir = pendingDir, n = view.length; pendingDir = 0;
+  const raw = idx + dir; idx = ((raw % n) + n) % n;
+  if (raw >= n) toast('最初の作品に戻りました', 1600); else if (raw < 0) toast('最後の作品に移りました', 1600);
+  if (dir > 0) { const old = roles.prev; roles.prev = roles.cur; roles.cur = roles.next; roles.next = old; paint(old, side(idx + 1)); }
+  else { const old = roles.next; roles.next = roles.cur; roles.cur = roles.prev; roles.prev = old; paint(old, side(idx - 1)); }
   roles.prev.classList.remove('live'); roles.next.classList.remove('live');
   setRoles(); setX(0, false); onSettle();
 }
 function bump(dir) {
-  toast(dir > 0 ? 'ここから先は、1か月より先の公開です' : 'ここより前は、1か月以上前の公開です');
   setX(-dir * 36, true);
   setTimeout(() => { if (!animating) setX(0, true); }, 170);
 }
@@ -573,7 +606,7 @@ function jumpTo(i) {
 function onSettle() {
   const f = view[idx]; if (!f) return;
   ambient.style.backgroundImage = `url("${f.backdrop ? IMG + 'w300' + f.backdrop : bgUrl(f)}")`;
-  for (const n of [idx + 1, idx + 2, idx - 1]) if (view[n]) new Image().src = bgUrl(view[n]);
+  if (view.length > 1) for (const n of [idx + 1, idx + 2, idx - 1]) new Image().src = bgUrl(at(n));
   markRail(); updateVinfo();
   if (sheetOpen === 'info') { sheetBody.innerHTML = infoHTML(f); sheetBody.scrollTop = 0; }
   setHud(true); queueLoad();
@@ -664,7 +697,7 @@ const P = {
       if (isCur && !direct) setHud(true);
     } else if (s === 0) {
       stage.classList.remove('playing', 'buffering');
-      if (isCur) { if (prefs.autoNext && idx < view.length - 1 && !sheetOpen) go(1); else setHud(true); }
+      if (isCur) { if (prefs.autoNext && view.length > 1 && !sheetOpen) go(1); else setHud(true); }
     }
   },
   onError(code) {
@@ -695,10 +728,14 @@ function toggleSound() {
   } else { P.muted = true; P.yt.mute(); syncSound(); }
   setHud(true);
 }
+function flash(text) {
+  const fx = $('#seekfx'); fx.className = 'c'; fx.textContent = text;
+  void fx.offsetWidth; fx.classList.add('on');
+}
 function togglePlay() {
   if (!P.ready) return;
-  if (P.state === 1 || P.state === 3) { P.yt.pauseVideo(); return; }
-  P.yt.playVideo();
+  if (P.state === 1 || P.state === 3) { P.yt.pauseVideo(); flash('一時停止'); return; }
+  P.yt.playVideo(); flash('再生');
   const k = P.key;
   setTimeout(() => { const f = view[idx]; if (P.key === k && P.state !== 1 && P.state !== 3 && f && !f.blocked) enterDirect('play'); }, 1300);
 }
@@ -740,6 +777,13 @@ let toastT = 0;
 function toast(msg, ms) {
   const el = $('#toast'); el.textContent = msg; el.classList.add('on');
   clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('on'), ms || 2600);
+}
+function setMode(m) {
+  if (prefs.mode === m) return;
+  prefs.mode = m; savePrefs(); layout(); setHud(true);
+  if (m === 'landscape' && innerHeight > innerWidth) toast('本体の画面の回転ロックをオンにしてから、横に倒して観てください', 6500);
+  else if (m === 'landscape') toast('横画面にしました', 1400);
+  else toast(innerWidth > innerHeight ? '縦画面にしました。本体を縦に持つと切り替わります' : '縦画面にしました', 2400);
 }
 function setFill(on) { if (prefs.fill === on) return; prefs.fill = on; savePrefs(); sizePlayer(); toast(on ? '映像を画面いっぱいに拡大しました' : '映像全体を表示しています', 1400); }
 
@@ -783,7 +827,7 @@ function buildRail() {
   const from = parseISO(data.from), to = parseISO(data.to), tS = todayS();
   railN = dayDiff(to, from) + 1; railDays = []; byDay = new Map();
   view.forEach((f, i) => { if (!byDay.has(f.date)) byDay.set(f.date, []); byDay.get(f.date).push(i); });
-  const tK = dayDiff(parseISO(tS), from);
+  const tK = dayDiff(parseISO(tS), from), narrow = W < 760, near = narrow ? 6 : 2;
   let h = '', ax = '';
   for (let k = 0; k < railN; k++) {
     const d = new Date(from.getFullYear(), from.getMonth(), from.getDate() + k), s = iso(d), list = byDay.get(s) || [];
@@ -793,7 +837,7 @@ function buildRail() {
     h += `<div class="day ${s <= tS ? 'lit' : 'unlit'}${s === tS ? ' today' : ''}" style="--k:${k}">${dots}${list.length > MAXDOT ? `<b>${list.length}</b>` : ''}</div>`;
     const left = ((k + .5) / railN * 100).toFixed(2);
     if (s === tS) ax += `<span class="now" style="left:${left}%">今日</span>`;
-    else if (d.getDay() === 5 && Math.abs(k - tK) > 2 && k > 0 && k < railN - 1) ax += `<span style="left:${left}%">${d.getMonth() + 1}/${d.getDate()}</span>`;
+    else if (Math.abs(k - tK) > near && k > 2 && k < railN - 3 && (narrow ? d.getDate() === 1 : d.getDay() === 5)) ax += `<span style="left:${left}%">${narrow ? `${d.getMonth() + 1}月` : `${d.getMonth() + 1}/${d.getDate()}`}</span>`;
   }
   daysEl.innerHTML = h; axisEl.innerHTML = ax;
 }
@@ -853,8 +897,7 @@ gest.addEventListener('pointermove', e => {
   if (!g.mode) { if (Math.hypot(dx, dy) < 10) return; g.mode = Math.abs(dx) >= Math.abs(dy) ? 'h' : 'v'; }
   g.x = p.x; g.y = p.y;
   if (g.mode === 'h') {
-    const edge = (idx === 0 && dx > 0) || (idx === view.length - 1 && dx < 0);
-    setX(edge ? dx * .28 : dx, false);
+    setX(view.length < 2 ? dx * .28 : dx, false);
     g.samples.push({ x: p.x, t: e.timeStamp });
     if (g.samples.length > 5) g.samples.shift();
   }
@@ -875,16 +918,22 @@ function gestEnd(e) {
   } else if (cur.mode === 'v') {
     if (e.type === 'pointerup') { if (dy < -40) openSheet('info'); else if (dy > 40) setHud(false); }
   } else if (e.type === 'pointerup' && e.timeStamp - cur.t0 < 450) {
-    tap(cur.x0);
+    markTap(e); tap(cur.x0, cur.y0);
   }
 }
 gest.addEventListener('pointerup', gestEnd);
 gest.addEventListener('pointercancel', gestEnd);
-function tap(x) {
+function tap(x, y) {
+  if (stage.classList.contains('tall')) {
+    // below the video band is the film itself: a tap opens its details
+    const r = uiRect(ytbox);
+    if (y > r.top + r.height) { openSheet('info'); return; }
+    if (y < r.top) return;
+  }
   const now = performance.now(), zone = x < W * .33 ? -1 : x > W * .67 ? 1 : 0;
   if (zone && zone === lastTap.zone && now - lastTap.t < 300) { seekBy(zone * 10); setHud(lastTap.hud); lastTap.t = 0; return; }
   lastTap = { t: now, zone, hud: hudOn };
-  setHud(!hudOn);
+  if (zone === 0) { togglePlay(); setHud(true); } else setHud(!hudOn);
 }
 let wheelLock = false;
 stage.addEventListener('wheel', e => {
@@ -906,6 +955,7 @@ addEventListener('keydown', e => {
   else if (k === 'm') toggleSound();
   else if (k === 'f') setFill(!prefs.fill);
   else if (k === 'i') sheetOpen ? closeSheet() : openSheet('info');
+  else if (k === 'o' && coarse) setMode(prefs.mode === 'landscape' ? 'portrait' : 'landscape');
 });
 
 /* ---------- sheets ---------- */
@@ -934,7 +984,8 @@ function settingsHTML() {
   <h3 class="sh">設定</h3>
   <label class="row" for="optAuto"><span>終わったら次の予告へ進む</span><input class="sw" type="checkbox" id="optAuto"${prefs.autoNext ? ' checked' : ''}></label>
   <label class="row" for="optFill"><span>映像を画面いっぱいに拡大する<small>上下が少し切れます。ピンチでも切り替えられます</small></span><input class="sw" type="checkbox" id="optFill"${prefs.fill ? ' checked' : ''}></label>
-  <div class="row"><span>縦向きロック中の画面の向き<small>本体をどちらに倒して観るかを入れ替えます</small></span><button class="btn" type="button" data-act="flip">反対向きにする</button></div>
+  ${coarse ? `<div class="row"><span>画面の向き<small>横画面は、本体の画面の回転ロックをオンにしてお使いください</small></span><button class="btn" type="button" data-act="mode">${prefs.mode === 'landscape' ? '縦画面にする' : '横画面にする'}</button></div>` : ''}
+  ${coarse && prefs.mode === 'landscape' ? `<div class="row"><span>横画面で倒す向き<small>本体をどちらに倒して観るかを入れ替えます</small></span><button class="btn" type="button" data-act="flip">反対向きにする</button></div>` : ''}
   <div class="row"><span>作品データ<small>${data.films.length}本を ${t.getHours()}:${pad(t.getMinutes())} に取得${data.skipped ? `、予告編のない${data.skipped}本は除外` : ''}</small></span><button class="btn" type="button" data-act="reload">更新する</button></div>
   <div class="row"><span>TMDB の API キー</span><button class="btn" type="button" data-act="rekey">変更する</button></div>
   <div class="row"><span>音が出ないとき<small>映像を一度だけ直接タップして再生します</small></span><button class="btn" type="button" data-act="unlock">直接タップに切り替える</button></div>
@@ -966,7 +1017,8 @@ function sheetAct(target, viaTouch) {
     return true;
   }
   const act = b.dataset.act;
-  if (act === 'flip') { prefs.flip = !prefs.flip; savePrefs(); layout(); if (!rot) toast('縦向きで開いたときに反映されます'); }
+  if (act === 'mode') { closeSheet(); setMode(prefs.mode === 'landscape' ? 'portrait' : 'landscape'); }
+  else if (act === 'flip') { prefs.flip = !prefs.flip; savePrefs(); layout(); if (!rot) toast('縦向きで開いたときに反映されます'); }
   else if (act === 'reload') { closeSheet(); start(true); }
   else if (act === 'rekey') { closeSheet(); showSetup(''); }
   else if (act === 'unlock') {
@@ -997,7 +1049,7 @@ sheetBody.addEventListener('change', e => {
     sheetBody.scrollTop = s0 - (p.y - y0);
     const dt = e.timeStamp - lt;
     if (dt > 0) { vy = (p.y - ly) / dt; ly = p.y; lt = e.timeStamp; }
-    if (p.x - x0 > 70 && Math.abs(p.y - y0) < 40) { id = null; closeSheet(); }
+    if (stage.classList.contains('tall') ? (s0 <= 0 && p.y - y0 > 90 && Math.abs(p.x - x0) < 60) : (p.x - x0 > 70 && Math.abs(p.y - y0) < 40)) { id = null; closeSheet(); }
   });
   const up = e => {
     if (e.pointerId !== id) return;
@@ -1017,8 +1069,8 @@ sheetBody.addEventListener('change', e => {
 onTap($('#bSound'), toggleSound);
 onTap($('#bFill'), () => { setFill(!prefs.fill); setHud(true); });
 onTap($('#bInfo'), () => openSheet('info'));
+onTap($('#bOrient'), () => setMode(prefs.mode === 'landscape' ? 'portrait' : 'landscape'));
 onTap($('#bSet'), () => openSheet('settings'));
-onTap($('#bPlay'), () => { togglePlay(); setHud(true); });
 onTap($('#bPrev'), () => go(-1));
 onTap($('#bNext'), () => go(1));
 onTap($('#bClose'), closeSheet);
@@ -1034,7 +1086,7 @@ function veil(mode, info) {
   if (!mode) { v.hidden = true; return; }
   v.hidden = false; v.dataset.mode = mode;
   const msg = $('#vmsg'), sub = $('#vsub');
-  if (mode === 'load') { msg.textContent = '予告編を集めています'; sub.textContent = '公開前後1か月の作品を TMDB から取得しています'; $('#vbar').style.width = '0'; }
+  if (mode === 'load') { msg.textContent = '予告編を集めています'; sub.textContent = '1か月前から2か月先までの公開作を TMDB から取得しています'; $('#vbar').style.width = '0'; }
   else if (mode === 'empty') { msg.textContent = 'この期間に、予告編のある作品が見つかりませんでした'; sub.textContent = '時間をおいて、もう一度読み込んでください。'; }
   else { msg.textContent = '作品データを取得できませんでした'; sub.textContent = info && info.status ? `TMDB からエラー ${info.status} が返りました。少し待ってから読み込み直してください。` : 'TMDB に接続できませんでした。通信状況を確認して、読み込み直してください。'; }
 }
