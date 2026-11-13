@@ -406,6 +406,7 @@ const roles = { prev: slides[0], cur: slides[1], next: slides[2] };
 const prefs = Object.assign({ mode: 'portrait', flip: false, fill: false, autoNext: true }, store.get('prefs', {}));
 const savePrefs = () => store.set('prefs', prefs);
 let apiKey = store.get('key', '');
+let proxy = false;   // true when the page is served with its own /api relay (Cloudflare), which holds the TMDB token
 let data = null;          // { from, to, today, fetchedAt, films, skipped }
 let view = [];            // films after the active filter, in release order
 let idx = 0;
@@ -454,9 +455,10 @@ function uiRect(el) {
 /* ---------- TMDB ---------- */
 async function tmdb(path, params, tries) {
   tries = tries || 0;
-  const url = new URL(TMDB + path);
+  const url = new URL(proxy ? location.origin + '/api' + path : TMDB + path);
   const headers = { accept: 'application/json' };
-  if (apiKey.length > 60 || apiKey.startsWith('eyJ')) headers.Authorization = 'Bearer ' + apiKey;
+  if (proxy) {}
+  else if (apiKey.length > 60 || apiKey.startsWith('eyJ')) headers.Authorization = 'Bearer ' + apiKey;
   else url.searchParams.set('api_key', apiKey);
   for (const k in (params || {})) url.searchParams.set(k, params[k]);
   const res = await fetch(url, { headers });
@@ -987,7 +989,7 @@ function settingsHTML() {
   ${coarse ? `<div class="row"><span>画面の向き<small>横画面は、本体の画面の回転ロックをオンにしてお使いください</small></span><button class="btn" type="button" data-act="mode">${prefs.mode === 'landscape' ? '縦画面にする' : '横画面にする'}</button></div>` : ''}
   ${coarse && prefs.mode === 'landscape' ? `<div class="row"><span>横画面で倒す向き<small>本体をどちらに倒して観るかを入れ替えます</small></span><button class="btn" type="button" data-act="flip">反対向きにする</button></div>` : ''}
   <div class="row"><span>作品データ<small>${data.films.length}本を ${t.getHours()}:${pad(t.getMinutes())} に取得${data.skipped ? `、予告編のない${data.skipped}本は除外` : ''}</small></span><button class="btn" type="button" data-act="reload">更新する</button></div>
-  <div class="row"><span>TMDB の API キー</span><button class="btn" type="button" data-act="rekey">変更する</button></div>
+  ${proxy ? '' : `<div class="row"><span>TMDB の API キー</span><button class="btn" type="button" data-act="rekey">変更する</button></div>`}
   <div class="row"><span>音が出ないとき<small>映像を一度だけ直接タップして再生します</small></span><button class="btn" type="button" data-act="unlock">直接タップに切り替える</button></div>
   <p class="credit">作品情報と画像は TMDB から取得しています。This product uses the TMDB API but is not endorsed or certified by TMDB. 映像は YouTube の埋め込みプレイヤーで再生しています。</p>`;
 }
@@ -1088,7 +1090,7 @@ function veil(mode, info) {
   const msg = $('#vmsg'), sub = $('#vsub');
   if (mode === 'load') { msg.textContent = '予告編を集めています'; sub.textContent = '1か月前から2か月先までの公開作を TMDB から取得しています'; $('#vbar').style.width = '0'; }
   else if (mode === 'empty') { msg.textContent = 'この期間に、予告編のある作品が見つかりませんでした'; sub.textContent = '時間をおいて、もう一度読み込んでください。'; }
-  else { msg.textContent = '作品データを取得できませんでした'; sub.textContent = info && info.status ? `TMDB からエラー ${info.status} が返りました。少し待ってから読み込み直してください。` : 'TMDB に接続できませんでした。通信状況を確認して、読み込み直してください。'; }
+  else { msg.textContent = '作品データを取得できませんでした'; sub.textContent = proxy && info && (info.status === 401 || info.status === 503) ? 'サーバーに登録された TMDB のキーが使えませんでした。Cloudflare のシークレット TMDB_TOKEN を確認してください。' : info && info.status ? `TMDB からエラー ${info.status} が返りました。少し待ってから読み込み直してください。` : 'TMDB に接続できませんでした。通信状況を確認して、読み込み直してください。'; }
 }
 function showSetup(err) {
   stage.hidden = true; setup.hidden = false;
@@ -1132,13 +1134,14 @@ async function start(force) {
     if (!data.films.length) { veil('empty'); return; }
     ready();
   } catch (e) {
-    if (e.status === 401) { showSetup('保存されていたキーが TMDB に受け付けられませんでした。もう一度入れてください。'); return; }
+    if (e.status === 401 && !proxy) { showSetup('保存されていたキーが TMDB に受け付けられませんでした。もう一度入れてください。'); return; }
     if (usable && cached.today === todayS()) { data = cached; ready(); toast('最新のデータを取得できなかったため、前回のデータを表示しています', 4000); return; }
     veil('error', e);
   }
 }
 function ready() {
   veil(null);
+  $('#bRekey').hidden = proxy;
   for (const f of data.films) { f.vi = 0; f.blocked = false; f.tries = 0; }
   syncSound();
   setFilter('all', true);
@@ -1153,7 +1156,13 @@ addEventListener('resize', layout);
 addEventListener('orientationchange', () => setTimeout(layout, 80));
 if (window.visualViewport) visualViewport.addEventListener('resize', layout);
 layout();
-if (apiKey) start(false); else showSetup('');
+(async () => {
+  try {
+    const r = await fetch('/api/ping', { cache: 'no-store' });
+    if (r.ok && /json/.test(r.headers.get('content-type') || '')) proxy = (await r.json()).ok === true;
+  } catch (e) {}
+  if (proxy || apiKey) start(false); else showSetup('');
+})();
 })();
 </script>
 </body>

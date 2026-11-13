@@ -5,7 +5,7 @@
 
 ## 使い方
 
-1. ページを開き、[TMDB の API キー](https://www.themoviedb.org/settings/api)を入れます（32桁のキーでも、`eyJ` で始まるトークンでも可）。キーはそのブラウザの中にだけ保存されます。
+1. Cloudflare で動かしているときはそのまま始まります。それ以外の場所に置いたときは、最初に [TMDB の API キー](https://www.themoviedb.org/settings/api)を入れます（キーはそのブラウザの中にだけ保存されます）。
 2. 今日に一番近い公開作から始まります。最後まで進むと最初に戻り、最初から戻ると最後に移ります。
 
 | 操作 | 動き |
@@ -23,7 +23,20 @@
 
 ## 置き場所
 
-ビルドは不要で、`index.html` を https で配信すれば動きます（GitHub Pages なら Settings → Pages → Deploy from a branch → `main` / root）。
+### Cloudflare Workers（おすすめ）
+
+TMDB のキーを Cloudflare 側に置き、ページからは `/api/…` 経由で取得します。キーはブラウザに渡りません。
+
+1. Cloudflare のダッシュボードで Workers & Pages → 作成 → GitHub リポジトリをインポートし、このリポジトリを選んでデプロイします。設定は `wrangler.jsonc` から読まれるので、ビルドコマンドは不要です。
+2. 作成した Worker の 設定 → 変数とシークレット に、種類「シークレット」、名前 `TMDB_TOKEN` で TMDB の「API 読み取りアクセストークン」を登録し、もう一度デプロイします。
+3. `https://trailadder.<サブドメイン>.workers.dev` で開きます。`main` に push するたびに自動でデプロイされます。
+
+`worker.js` が中継するのは作品一覧（`/discover/movie`）と作品詳細（`/movie/{id}`）だけで、結果は6時間キャッシュします。
+
+### それ以外（GitHub Pages など）
+
+`index.html` を https で配信すれば動きます。この場合は最初にキーの入力を求めます。
+
 YouTube は https のページでしか埋め込み再生を許可しないため、ファイルを直接開いても再生されません。
 スマートフォンでは「ホーム画面に追加」するとブラウザの枠なしで開けます。
 
