@@ -1,0 +1,16 @@
+{
+  "name": "trailadder",
+  "short_name": "trailadder",
+  "description": "公開前後1か月の映画の予告編を、公開日順にスワイプで観る。",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "background_color": "#2a0710",
+  "theme_color": "#000000",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
