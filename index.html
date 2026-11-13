@@ -239,6 +239,7 @@ a{color:inherit}
 .row small{display:block;font-size:11.5px;opacity:.66}
 .btn{flex:none;font:600 12.5px/1 var(--ui);padding:10px 14px;border-radius:99px;box-shadow:inset 0 0 0 1.2px rgba(255,245,220,.5)}
 .btn:active{background:rgba(255,245,220,.14)}
+.hx{position:absolute;z-index:2;left:0;top:0;width:100%;height:100%;margin:0;padding:0;opacity:0;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .fontrow{display:grid;justify-content:stretch;gap:10px}
 .fonts{display:flex;flex-wrap:wrap;gap:6px}
 .fonts button{padding:8px 12px;border-radius:99px;box-shadow:inset 0 0 0 1.2px rgba(255,245,220,.4);font:400 12.5px/1.2 var(--ui);text-align:left}
@@ -436,8 +437,10 @@ const store = {
 let ghost = null;
 document.addEventListener('click', e => {
   // swallow the click that follows a tap already handled, so it cannot land on whatever appeared underneath
-  if (ghost && e.timeStamp - ghost.t < 600 && Math.hypot(e.clientX - ghost.x, e.clientY - ghost.y) < 40) { ghost = null; e.preventDefault(); e.stopPropagation(); }
+  // 触覚用のスイッチ（下の「疑似触覚」）に当たったクリックは、切り替わりを止めると触覚も消えるので、伝わるのだけを止める
+  if (ghost && e.timeStamp - ghost.t < 600 && Math.hypot(e.clientX - ghost.x, e.clientY - ghost.y) < 40) { ghost = null; if (!e.target.classList || !e.target.classList.contains('hx')) e.preventDefault(); e.stopPropagation(); }
 }, true);
+const isHx = t => !!(t && t.classList && t.classList.contains('hx'));
 const markTap = e => { ghost = { t: e.timeStamp, x: e.clientX, y: e.clientY }; };
 function onTap(el, fn) {
   let pid = null, x = 0, y = 0, t = 0;
@@ -445,11 +448,33 @@ function onTap(el, fn) {
   el.addEventListener('pointerup', e => {
     if (e.pointerId !== pid) return;
     pid = null;
+    if (isHx(e.target)) return;   // 疑似触覚のスイッチに触れたタップは、続くクリックで動かす（指を離した時点で画面を変えると、クリックがスイッチに届かず触覚が出ない）
     if (Math.hypot(e.clientX - x, e.clientY - y) > 14 || e.timeStamp - t > 700) return;
     markTap(e); fn(e);
   });
   el.addEventListener('pointercancel', () => { pid = null; });
   el.addEventListener('click', fn);   // mouse and keyboard
+}
+
+/* ---------- 疑似触覚（iPhone・iPad のブラウザだけ。ar-clock と同じ仕組み） ----------
+   iOS のブラウザには振動させる命令がない。ただし「スイッチ」部品だけは、指で切り替えた瞬間に端末がカチッと鳴らす。
+   そこで各ボタンの上に透明なスイッチを重ね、指が触れたときにそのカチッを借りる（強さは選べない。OS の更新で効かなくなることがある）。
+   ボタン本来の動きは変えない：スイッチに当たったタップは、そのままボタンへ伝わる */
+const IOS_WEB = /iP(hone|ad|od)/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+function hapticCover() {
+  document.querySelectorAll('button, label.row').forEach(b => {
+    if (b.querySelector(':scope > .hx')) return;
+    if (getComputedStyle(b).position === 'static') b.style.position = 'relative';
+    const i = document.createElement('input');
+    i.className = 'hx'; i.type = 'checkbox'; i.setAttribute('switch', ''); i.tabIndex = -1; i.setAttribute('aria-hidden', 'true');
+    b.appendChild(i);
+  });
+}
+if (IOS_WEB) {
+  hapticCover();
+  // ボタンの中身を書き換えると重ねた部品も消えるので、そのたびに付け直す（書き換えが続いても1コマに1回）
+  let hxq = 0;
+  new MutationObserver(() => { if (!hxq) hxq = requestAnimationFrame(() => { hxq = 0; hapticCover(); }); }).observe(document.body, { childList: true, subtree: true });
 }
 
 /* ---------- elements & state ---------- */
@@ -798,12 +823,15 @@ function listFor(key) {
   return all.filter(FILTERS.find(x => x[0] === key)[2]);
 }
 function renderChips() {
-  $('#chips').innerHTML = FILTERS.map(([key, label]) => {
-    if (key === 'hot' && data.films.length <= HOT_N) return '';
-    const n = listFor(key).length;
-    if (!n && key !== 'all') return '';
-    return `<button class="chip" type="button" data-f="${key}" aria-pressed="${key === filter}">${label}<small>${n}</small></button>`;
-  }).join('');
+  const items = FILTERS.map(([key, label]) => [key, label, listFor(key).length])
+    .filter(([key, , n]) => !(key === 'hot' && data.films.length <= HOT_N) && (n || key === 'all'));
+  const box = $('#chips'), cur = [...box.querySelectorAll('[data-f]')];
+  if (cur.map(b => b.dataset.f).join() === items.map(x => x[0]).join()) {
+    // 同じ並びなら書き換えずに状態だけ直す（押したボタンを作り直すと、疑似触覚のスイッチがクリックの途中で消える）
+    cur.forEach((b, i) => { b.setAttribute('aria-pressed', b.dataset.f === filter); b.querySelector('small').textContent = items[i][2]; });
+    return;
+  }
+  box.innerHTML = items.map(([key, label, n]) => `<button class="chip" type="button" data-f="${key}" aria-pressed="${key === filter}">${label}<small>${n}</small></button>`).join('');
 }
 function setFilter(key, initial) {
   const cur = initial ? null : view[idx];
@@ -1042,7 +1070,7 @@ function sheetAct(target, viaTouch) {
   const b = target.closest('[data-vi],[data-act]');
   if (!b) {
     // a touch tap on a switch row flips the switch itself; mouse and keyboard go through the label natively
-    const row = viaTouch && target.closest('label.row'), sw = row && row.querySelector('input.sw');
+    const row = (viaTouch || target.classList.contains('hx')) && target.closest('label.row'), sw = row && row.querySelector('input.sw');
     if (!sw) return false;
     sw.checked = !sw.checked; sw.dispatchEvent(new Event('change', { bubbles: true }));
     return true;
@@ -1111,7 +1139,7 @@ function fling(vy) {
   const up = e => {
     if (e.pointerId !== id) return;
     id = null;
-    if (!moved) { if (e.type === 'pointerup' && e.timeStamp - t0 < 700 && sheetAct(e.target, true)) markTap(e); return; }
+    if (!moved) { if (e.type === 'pointerup' && !isHx(e.target) && e.timeStamp - t0 < 700 && sheetAct(e.target, true)) markTap(e); return; }
     setTimeout(() => { moved = false; }, 80);
     if (dir === 'h') {
       if (!stage.classList.contains('inl')) return;
