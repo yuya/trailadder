@@ -253,7 +253,7 @@ a{color:inherit}
    date, title and synopsis (same type, same place) on the same blurred backdrop, and the rest follows below. */
 #stage.tall.inl #sheet{top:var(--vb);height:auto;bottom:0;transform:none;opacity:0;pointer-events:none;border-radius:0;background:none;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none}
 #stage.tall.inl.sheet #sheet{opacity:1;pointer-events:auto}
-#stage.tall.inl #scrimS{background:none}
+#stage.tall.inl #scrimS{background:none;pointer-events:none}   /* the video stays live: tap to pause, swipe to change film */
 #stage.tall.inl #sheetBody{padding:18px var(--gr) calc(var(--gb) + 28px) var(--gl);
   -webkit-mask-image:linear-gradient(to bottom,transparent,#000 16px);mask-image:linear-gradient(to bottom,transparent,#000 16px)}
 #stage.tall.inl #bClose{top:8px}
@@ -266,6 +266,20 @@ a{color:inherit}
 #stage.tall.sheet #sheet{transform:none}
 
 #stage.tall #toast,#stage.tall #direct{top:calc(var(--vt) + 14px)}
+
+/* ---------- landscape details: the video moves left and the details sit beside it ---------- */
+#stage{--pw:min(42%,460px)}
+#stage.split #scrimS{background:none;pointer-events:none}
+#stage.split #sheet{width:var(--pw)}
+#stage.split #player,#stage.split #track{right:var(--pw)}
+#stage.split .slide .meta{opacity:0;pointer-events:none}
+#stage.split #rail,#stage.split #vinfo{right:calc(var(--pw) + var(--gr))}
+#stage.split #bNext{right:calc(var(--pw) + var(--gr) - 12px)}
+.dbtn{justify-self:end;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 13px 0 10px;border-radius:99px;font:700 12.5px/1 var(--ui);
+  background:rgba(12,10,12,.5);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:inset 0 0 0 1px rgba(255,245,220,.28);text-shadow:none}
+.dbtn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.dbtn[aria-pressed="true"]{background:var(--light);color:var(--curtain-deep);box-shadow:none}
+#stage.tall .dbtn{display:none}
 
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition-duration:.01ms!important}
@@ -302,6 +316,9 @@ a{color:inherit}
       <button class="ib" id="bOrient" type="button" aria-label="横画面にする">
         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M3 14a8 8 0 004 6M2 17l1-3 3 1"/></svg>
       </button>
+      <button class="ib" id="bShare" type="button" aria-label="この予告編を共有">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v11M8 7.5l4-4 4 4M7 10.5H5.5v9.5h13v-9.5H17"/></svg>
+      </button>
       <button class="ib" id="bInfo" type="button" aria-label="作品の詳細を開く">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg>
       </button>
@@ -317,7 +334,7 @@ a{color:inherit}
   <button class="edge h" id="bPrev" type="button" aria-label="前の作品へ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
   <button class="edge h" id="bNext" type="button" aria-label="次の作品へ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
 
-  <div id="vinfo" class="h"><span id="vname"></span><span id="vtime"></span><a id="vopen" target="_blank" rel="noopener">YouTube で開く</a></div>
+  <div id="vinfo" class="h"><button class="dbtn" id="bDetail" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M14 5v14M16.5 9h1.5M16.5 12h1.5"/></svg>詳細</button><span id="vname"></span><span id="vtime"></span><a id="vopen" target="_blank" rel="noopener">YouTube で開く</a></div>
 
   <div id="rail" class="h" role="group" aria-label="公開日のカレンダー"><div class="days" id="days"></div><div class="axis" id="axis"></div><div class="bubble" id="bubble" hidden></div></div>
 
@@ -430,7 +447,7 @@ function layout() {
   stage.classList.toggle('ccw', rot === -90);
   stage.classList.toggle('narrow', W < 760);
   stage.classList.toggle('tall', !rot && H > W);
-  if (!stage.classList.contains('tall') && stage.classList.contains('inl')) { stage.classList.remove('inl'); if (sheetOpen === 'info') sheetBody.innerHTML = infoHTML(view[idx]); }
+  if (sheetOpen === 'info' && stage.classList.contains('tall') === stage.classList.contains('split')) openSheet('info');   // turned the phone: switch between in-place and side-by-side
   const bo = $('#bOrient');
   bo.hidden = !coarse;
   bo.setAttribute('aria-label', prefs.mode === 'landscape' ? '縦画面にする' : '横画面にする');
@@ -439,9 +456,14 @@ function layout() {
   sizePlayer();
   if (data && view.length) { buildRail(); markRail(); }
 }
+// read the shared link before anything rewrites the address bar
+let sharedLink = (() => { const q = new URLSearchParams(location.search), id = +q.get('f'); return id ? { id, v: q.get('v') } : null; })();
+let SW = 0;   // width of the film strip: the whole stage, or the part left of the details column
 function sizePlayer() {
+  const split = stage.classList.contains('split');
+  SW = split ? W - Math.min(W * .42, 460) : W;
   if (stage.classList.contains('tall')) { ytbox.style.width = W + 'px'; ytbox.style.height = (W * 9 / 16) + 'px'; return; }
-  const pw = prefs.fill ? Math.max(W, H * 16 / 9) : Math.min(W, H * 16 / 9);
+  const pw = prefs.fill && !split ? Math.max(W, H * 16 / 9) : Math.min(SW, H * 16 / 9);
   ytbox.style.width = pw + 'px'; ytbox.style.height = (pw * 9 / 16) + 'px';
   stage.classList.toggle('fill', !!prefs.fill);
 }
@@ -508,7 +530,7 @@ function go(dir) {
   if (animating) finalize();
   if (view.length < 2) { bump(dir); return; }
   animating = true; pendingDir = dir;
-  setX(-dir * W, true);
+  setX(-dir * (SW || W), true);
   animT = setTimeout(finalize, 290);
 }
 function finalize() {
@@ -536,7 +558,8 @@ function onSettle() {
   ambient.style.backgroundImage = `url("${f.backdrop ? IMG + 'w300' + f.backdrop : bgUrl(f)}")`;
   if (view.length > 1) for (const n of [idx + 1, idx + 2, idx - 1]) new Image().src = bgUrl(at(n));
   markRail(); updateVinfo();
-  if (sheetOpen === 'info') { sheetBody.innerHTML = infoHTML(f); sheetBody.scrollTop = 0; }
+  if (sheetOpen === 'info') { sheetBody.innerHTML = infoHTML(f); sheetBody.scrollTop = 0; sheetBody.style.transition = 'none'; sheetBody.style.transform = ''; }
+  try { history.replaceState(null, '', shareUrl(f)); } catch (e) {}   // the address bar is always this film's link
   setHud(true); queueLoad();
 }
 function queueLoad() {
@@ -868,7 +891,7 @@ function gestEnd(e) {
     const far = Math.abs(dx) > W * .2, fast = Math.abs(v) > .45 && Math.abs(dx) > 24 && Math.sign(v) === Math.sign(dx);
     if (e.type === 'pointerup' && (far || fast)) go(dx < 0 ? 1 : -1); else setX(0, true);
   } else if (cur.mode === 'v') {
-    if (e.type === 'pointerup') { if (dy < -40) openSheet('info'); else if (dy > 40) setHud(false); }
+    if (e.type === 'pointerup') { if (dy < -40 && stage.classList.contains('tall')) openSheet('info'); else if (dy > 40) setHud(false); }
   } else if (e.type === 'pointerup' && e.timeStamp - cur.t0 < 450) {
     markTap(e); tap(cur.x0, cur.y0);
   }
@@ -937,7 +960,7 @@ function infoHTML(f) {
 function detailsHTML(f, vi) {
   const orig = stage.classList.contains('inl') && f.otitle && f.otitle !== f.title;   // in portrait the header mirrors the film card, so the original title sits here
   return `
-  <p class="overview">${f.overview ? esc(f.overview) : 'あらすじは TMDB にまだ登録されていません。'}</p>
+  <p class="overview">${f.overview ? esc(f.overview) : f.archived ? '掲載期間を過ぎた作品のため、あらすじは表示していません。' : 'あらすじは TMDB にまだ登録されていません。'}</p>
   ${f.ovLang === 'mt' ? '<p class="ovnote">英語のあらすじを機械翻訳しています</p>' : f.ovLang === 'en' ? '<p class="ovnote">日本語のあらすじが未登録のため、英語で表示しています</p>' : ''}
   ${f.director.length || f.cast.length || orig ? `<dl class="credits">${orig ? `<dt>原題</dt><dd>${esc(f.otitle)}</dd>` : ''}${f.director.length ? `<dt>監督</dt><dd>${esc(f.director.join('、'))}</dd>` : ''}${f.cast.length ? `<dt>出演</dt><dd>${esc(f.cast.join('、'))}</dd>` : ''}</dl>` : ''}
   <h4>この作品の映像</h4>
@@ -960,7 +983,11 @@ let inlT = 0;
 function openSheet(kind) {
   if (!view.length) return;
   sheetOpen = kind;
-  clearTimeout(inlT); stage.classList.toggle('inl', kind === 'info' && stage.classList.contains('tall'));
+  const tall = stage.classList.contains('tall');
+  clearTimeout(inlT); stage.classList.toggle('inl', kind === 'info' && tall);
+  const split = kind === 'info' && !tall;
+  if (split !== stage.classList.contains('split')) { stage.classList.toggle('split', split); sizePlayer(); }
+  $('#bDetail').setAttribute('aria-pressed', String(split));
   sheetBody.innerHTML = kind === 'info' ? infoHTML(view[idx]) : settingsHTML();
   sheetBody.scrollTop = 0;
   stage.classList.add('sheet'); sheet.setAttribute('aria-hidden', 'false'); setHud(true);
@@ -969,6 +996,8 @@ function closeSheet() {
   if (!sheetOpen) return;
   sheetOpen = null; stage.classList.remove('sheet'); sheet.setAttribute('aria-hidden', 'true'); setHud(true);
   clearTimeout(inlT); inlT = setTimeout(() => { if (!sheetOpen) stage.classList.remove('inl'); }, 260);   // after the fade
+  if (stage.classList.contains('split')) { stage.classList.remove('split'); sizePlayer(); }
+  $('#bDetail').setAttribute('aria-pressed', 'false');
 }
 function sheetAct(target, viaTouch) {
   const b = target.closest('[data-vi],[data-act]');
@@ -1009,27 +1038,47 @@ function fling(vy) {
   step();
 }
 (() => {
-  let id = null, x0 = 0, y0 = 0, s0 = 0, t0 = 0, ly = 0, lt = 0, vy = 0, moved = false;
+  let id = null, x0 = 0, y0 = 0, s0 = 0, t0 = 0, ly = 0, lt = 0, vy = 0, moved = false, dir = null, hs = [];
   sheetBody.addEventListener('pointerdown', e => {
     if (e.pointerType === 'mouse') return;
     const p = toUI(e.clientX, e.clientY);
-    id = e.pointerId; x0 = p.x; y0 = ly = p.y; t0 = lt = e.timeStamp; s0 = sheetBody.scrollTop; vy = 0; moved = false;
+    id = e.pointerId; x0 = p.x; y0 = ly = p.y; t0 = lt = e.timeStamp; s0 = sheetBody.scrollTop; vy = 0; moved = false; dir = null; hs = [{ x: p.x, t: e.timeStamp }];
     cancelAnimationFrame(flingRaf);
   });
   sheetBody.addEventListener('pointermove', e => {
     if (e.pointerId !== id) return;
-    const p = toUI(e.clientX, e.clientY);
-    if (Math.abs(p.y - y0) > 6 || Math.abs(p.x - x0) > 6) moved = true;
-    sheetBody.scrollTop = s0 - (p.y - y0);
+    const p = toUI(e.clientX, e.clientY), dx = p.x - x0, dy = p.y - y0;
+    if (Math.abs(dy) > 6 || Math.abs(dx) > 6) moved = true;
+    if (!dir) { if (Math.hypot(dx, dy) < 10) return; dir = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v'; }
+    if (dir === 'h') {
+      if (stage.classList.contains('inl')) {
+        // portrait details: a sideways swipe changes the film, details and all
+        const x = view.length < 2 ? dx * .28 : dx;
+        setX(x, false); sheetBody.style.transition = 'none'; sheetBody.style.transform = `translate3d(${x}px,0,0)`;
+        hs.push({ x: p.x, t: e.timeStamp }); if (hs.length > 5) hs.shift();
+      } else if (dx > 70) { id = null; closeSheet(); }
+      return;
+    }
+    sheetBody.scrollTop = s0 - dy;
     const dt = e.timeStamp - lt;
     if (dt > 0) { vy = (p.y - ly) / dt; ly = p.y; lt = e.timeStamp; }
-    if (stage.classList.contains('tall') ? (s0 <= 0 && p.y - y0 > 90 && Math.abs(p.x - x0) < 60) : (p.x - x0 > 70 && Math.abs(p.y - y0) < 40)) { id = null; closeSheet(); }
+    if (stage.classList.contains('tall') && s0 <= 0 && dy > 90 && Math.abs(dx) < 60) { id = null; closeSheet(); }
   });
   const up = e => {
     if (e.pointerId !== id) return;
     id = null;
     if (!moved) { if (e.type === 'pointerup' && e.timeStamp - t0 < 700 && sheetAct(e.target, true)) markTap(e); return; }
     setTimeout(() => { moved = false; }, 80);
+    if (dir === 'h') {
+      if (!stage.classList.contains('inl')) return;
+      const p = toUI(e.clientX, e.clientY), dx = p.x - x0, a = hs[0], b = hs[hs.length - 1];
+      const v = hs.length > 1 ? (b.x - a.x) / Math.max(1, b.t - a.t) : 0;
+      const go1 = e.type === 'pointerup' && view.length > 1 && (Math.abs(dx) > W * .2 || (Math.abs(v) > .45 && Math.abs(dx) > 24 && Math.sign(v) === Math.sign(dx)));
+      sheetBody.style.transition = 'transform 260ms cubic-bezier(.2,.8,.2,1)';
+      if (go1) { const d = dx < 0 ? 1 : -1; sheetBody.style.transform = `translate3d(${-d * W}px,0,0)`; go(d); }
+      else { sheetBody.style.transform = ''; setX(0, true); }
+      return;
+    }
     fling(vy);
   };
   sheetBody.addEventListener('pointerup', up);
@@ -1037,7 +1086,42 @@ function fling(vy) {
   sheetBody.addEventListener('click', e => { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
 })();
 
+/* ---------- links to one film ---------- */
+// ?f=<TMDB id>, plus &v=<YouTube id> when another of its videos is chosen. Films that have left the window
+// are looked up in data/archive.json, which keeps every film the site has listed.
+function shareUrl(f) {
+  const u = new URL(location.pathname, location.origin);
+  u.searchParams.set('f', f.id);
+  if ((f.vi || 0) > 0) u.searchParams.set('v', curVid(f).key);
+  return u.href;
+}
+async function share() {
+  const f = view[idx]; if (!f) return;
+  const url = shareUrl(f), d = parseISO(f.date);
+  const text = `${f.title}（${d.getMonth() + 1}月${d.getDate()}日公開）の${vidLabel(curVid(f))}`;
+  if (navigator.share) {
+    try { await navigator.share({ title: f.title, text, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  try { await navigator.clipboard.writeText(url); toast('この予告編へのリンクをコピーしました'); }
+  catch (e) { toast(url, 8000); }
+}
+async function openShared(id, vkey) {
+  const pick = f => { if (vkey) { const k = f.vids.findIndex(v => v.key === vkey); if (k >= 0) f.vi = k; } };
+  const i = view.findIndex(f => f.id === id);
+  if (i >= 0) { pick(view[i]); jumpTo(i); return; }
+  let a = null;
+  try { const r = await fetch('data/archive.json', { cache: 'no-cache' }); if (r.ok) a = (await r.json())[id]; } catch (e) {}
+  if (!a || !a.v || !a.v.length) { toast('共有された作品は見つかりませんでした。今日の作品から始めます', 4000); return; }
+  const g = { id, title: a.t, otitle: a.o || '', date: a.d, vids: a.v, genres: a.g || [], gids: [], runtime: a.r || 0, poster: a.p || null, backdrop: a.b || null,
+    director: [], cast: [], overview: '', ol: '', pop: 0, archived: true, vi: 0, blocked: false, tries: 0 };
+  pick(g);
+  view.unshift(g); buildRail(); jumpTo(0);
+  toast('掲載期間を過ぎた作品です。左右にスワイプすると今の作品に移ります', 5000);
+}
+
 /* ---------- buttons ---------- */
+$('#bShare').addEventListener('click', share);   // a plain click, so the share sheet counts as a user action
+onTap($('#bDetail'), () => { sheetOpen === 'info' ? closeSheet() : openSheet('info'); });
 onTap($('#bSound'), toggleSound);
 onTap($('#bFill'), () => { setFill(!prefs.fill); setHud(true); });
 onTap($('#bInfo'), () => openSheet('info'));
@@ -1083,11 +1167,13 @@ function ready() {
   veil(null);
   for (const f of data.films) { f.vi = 0; f.blocked = false; f.tries = 0; }
   syncSound();
+  const link = sharedLink; sharedLink = null;   // only the first start follows the link; later reloads keep the current film
   setFilter('all', true);
+  if (link) openShared(link.id, link.v);
   daysEl.classList.add('intro'); setTimeout(() => daysEl.classList.remove('intro'), 1800);
   if (!store.get('hinted', false)) {
     store.set('hinted', true);
-    setTimeout(() => toast('左右にスワイプで作品を切り替え、上にスワイプで詳細を開きます', 5200), 900);
+    setTimeout(() => toast(stage.classList.contains('tall') ? '左右にスワイプで作品を切り替え。あらすじを上になぞると詳細が続きます' : '左右にスワイプで作品を切り替え。右下の「詳細」で作品情報を横に並べます', 5200), 900);
   }
 }
 

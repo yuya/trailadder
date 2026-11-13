@@ -154,6 +154,12 @@ for (const f of films) {
 films.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : b.pop - a.pop || a.id - b.id);
 
 await mkdir('data', { recursive: true });
+// every film ever listed, so a shared link (?f=<id>) still opens after the film leaves the window
+let archive = {};
+try { archive = JSON.parse(await readFile('data/archive.json', 'utf8')); } catch (e) {}
+for (const f of films) archive[f.id] = { t: f.title, o: f.otitle && f.otitle !== f.title ? f.otitle : undefined, d: f.date, r: f.runtime || undefined,
+  g: f.genres.length ? f.genres : undefined, p: f.poster || undefined, b: f.backdrop || undefined, v: f.vids.map(({ key, type, lang, name }) => ({ key, type, lang, name })) };
+await writeFile('data/archive.json', JSON.stringify(archive) + '\n');
 await writeFile('data/translations.json', JSON.stringify(keep, null, 1) + '\n');
 await writeFile('data/films.json', JSON.stringify({ from: fromS, to: toS, today: iso(today), fetchedAt: Date.now(), films, skipped }) + '\n');
 console.log(`machine-translated ${translated} new synopses; ${Object.keys(keep).length} translations kept`);
