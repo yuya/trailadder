@@ -30,10 +30,10 @@ var FONTS = (function () {
   for (i = 32; i < 127; i++) A += String.fromCharCode(i);     // 英数字と記号（ASCII）だけを取り出す
   var seedA = G + 'family=LINE+Seed+JP:wght@400;700&text=' + encodeURIComponent(A) + '&display=swap',
       plex = G + 'family=IBM+Plex+Sans+JP:wght@300;400;500;600&display=swap',
-      urban = G + 'family=Urbanist:wght@400;500;600&display=swap';
+      urban = G + 'family=Urbanist:wght@400;500;600;800&display=swap';
   return {
     inter:     { name: 'Inter → IBM Plex Sans JP（デフォルト）', css: [G + 'family=Inter:wght@300;400;500;600&display=swap', urban, plex], stack: '"Inter","IBM Plex Sans JP",var(--font0)', name2: '"Urbanist","IBM Plex Sans JP",var(--font0)' },
-    urban:     { name: 'Urbanist → IBM Plex Sans JP', css: [urban.replace('400;500;600', '300;400;500;600'), plex], stack: '"Urbanist","IBM Plex Sans JP",var(--font0)' },
+    urban:     { name: 'Urbanist → IBM Plex Sans JP', css: [urban.replace('400;500;600;800', '300;400;500;600;800'), plex], stack: '"Urbanist","IBM Plex Sans JP",var(--font0)' },
     sys:       { name: '端末標準（cinemaladder と同じ）', css: [], stack: '' },
     seed:      { name: 'LINE Seed JP', css: [G + 'family=LINE+Seed+JP:wght@400;700&display=swap'], stack: '"LINE Seed JP"' },
     seedA:     { name: '英数字だけ LINE Seed JP', css: [seedA], stack: '"LINE Seed JP",var(--font0)' },
@@ -131,7 +131,7 @@ a{color:inherit}
 #stage:not(.hud) .h{opacity:0;pointer-events:none}
 
 #top{position:absolute;z-index:4;top:0;left:0;right:0;height:calc(46px + var(--gt));padding:var(--gt) calc(var(--gr) - 8px) 0 var(--gl);display:flex;align-items:center;gap:14px}
-.brand{flex:none;display:inline-flex;align-items:center;gap:7px;font:600 18px/1 var(--name);font-feature-settings:inherit;letter-spacing:.02em}
+.brand{flex:none;display:inline-flex;align-items:center;gap:7px;font:800 18px/1 var(--name);font-feature-settings:inherit;letter-spacing:.01em}   /* cinemaladder のサイト名と同じ太さ・字間 */
 .brand .mark{width:22px;height:22px;flex:none}
 .lad{color:var(--bulb)}
 .chips{display:flex;gap:6px;min-width:0}
