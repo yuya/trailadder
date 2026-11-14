@@ -23,6 +23,8 @@
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="preconnect" href="https://image.tmdb.org">
 <script>
+/* 確認用（stg）のアドレス（stg.… / stg-….）で開いたときだけ、画面に印を出す */
+if (/^stg[.-]/.test(location.hostname)) document.documentElement.classList.add('stg');
 /* フォントの選択（設定画面。この端末に保存）。
    既定は Inter → IBM Plex Sans JP。サイト名と作品の題名だけは Urbanist → IBM Plex Sans JP（--name）。sys は cinemaladder と同じ端末標準のフォント */
 var FONTS = (function () {
@@ -275,6 +277,10 @@ a{color:inherit}
 #vsub{margin:0;font:400 12.5px/1.7 var(--ui);font-feature-settings:inherit;opacity:.78;font-variant-numeric:tabular-nums}
 #vact{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
 
+/* 確認用（stg）の印。stg のアドレスで開いたときだけ出す。触れない・動作を邪魔しない */
+#envtag{display:none;position:absolute;z-index:10;left:var(--gl);bottom:calc(var(--gb) - 3px);pointer-events:none;user-select:none;-webkit-user-select:none;
+  font:800 10px/1 var(--name);font-feature-settings:inherit;letter-spacing:.08em;color:var(--curtain-deep);background:var(--bulb);padding:3px 6px;border-radius:4px;opacity:.9}
+html.stg #envtag{display:block}
 #toast{position:absolute;z-index:9;left:50%;top:calc(var(--gt) + 52px);transform:translate(-50%,-8px);max-width:78%;text-align:center;background:rgba(0,0,0,.8);font:400 12.5px/1.55 var(--ui);font-feature-settings:inherit;padding:9px 14px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
 #toast.on{opacity:1;transform:translate(-50%,0)}
 
@@ -409,6 +415,7 @@ a{color:inherit}
   </div>
 
   <div id="toast" role="status" aria-live="polite"></div>
+  <div id="envtag" aria-hidden="true">stg</div>
 </div>
 
 
