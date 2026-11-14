@@ -116,7 +116,7 @@ a{color:inherit}
 .state{flex:none;font:600 12.5px/1 var(--ui);font-feature-settings:inherit;padding:7px 12px;border-radius:99px;white-space:nowrap}
 .state.lit{background:var(--bulb);color:var(--curtain-deep)}
 .state.unlit{box-shadow:inset 0 0 0 1.5px var(--silver);background:rgba(0,0,0,.3)}
-.title{margin:0;font:500 clamp(20px,calc(var(--H) * .074),40px)/1.25 var(--name);font-feature-settings:inherit;text-wrap:balance;word-break:normal;word-break:auto-phrase;overflow-wrap:anywhere;text-shadow:0 1px 14px rgba(0,0,0,.65);
+.title{margin:0;font:500 clamp(20px,calc(var(--H) * .074),40px)/1.25 var(--name);font-feature-settings:inherit;text-wrap:pretty;word-break:keep-all;overflow-wrap:anywhere;text-shadow:0 1px 14px rgba(0,0,0,.65);
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 .sub{margin:0;font:400 12.5px/1.5 var(--ui);font-feature-settings:inherit;opacity:.86;text-shadow:0 1px 6px rgba(0,0,0,.7)}
 
@@ -240,7 +240,7 @@ a{color:inherit}
 .ihead{display:flex;gap:14px;align-items:flex-start;padding-right:38px}
 .poster{flex:none;width:76px;aspect-ratio:2/3;border-radius:4px;object-fit:cover;background:rgba(0,0,0,.3)}
 .idate{margin:0 0 4px;font:600 12px/1.4 var(--ui);font-feature-settings:inherit;color:var(--bulb)}
-.ihead h3{margin:0;font:500 21px/1.3 var(--name);font-feature-settings:inherit;text-wrap:balance;word-break:normal;word-break:auto-phrase;overflow-wrap:anywhere}
+.ihead h3{margin:0;font:500 21px/1.3 var(--name);font-feature-settings:inherit;text-wrap:pretty;word-break:keep-all;overflow-wrap:anywhere}
 .iorig,.isub{margin:3px 0 0;font:400 12px/1.5 var(--ui);font-feature-settings:inherit;opacity:.76}
 .overview{margin:0;font:400 13.5px/1.85 var(--ui);font-feature-settings:inherit}
 .ovnote{margin:-6px 0 0;font:400 11.5px/1.6 var(--ui);font-feature-settings:inherit;opacity:.6}
@@ -439,6 +439,10 @@ const $ = (s, r = document) => r.querySelector(s);
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+/* 題名の改行位置。日本語は単語の区切りに <wbr> を入れ、CSS は「単語の途中では折らない」（keep-all）にする。
+   こうすると、Chrome でも Safari でも、区切りのよい所だけで折り返す。Intl.Segmenter がない環境では、そのまま表示する */
+const SEG = typeof Intl !== 'undefined' && Intl.Segmenter ? new Intl.Segmenter('ja', { granularity: 'word' }) : null;
+const wbrTitle = s => { const t = String(s == null ? '' : s); if (!SEG) return esc(t); return [...SEG.segment(t)].map(x => esc(x.segment)).join('<wbr>'); };
 const pad = n => String(n).padStart(2, '0');
 const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const parseISO = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
@@ -594,7 +598,7 @@ function paint(el, f) {
   $('.date', el).textContent = `${d.getMonth() + 1}.${d.getDate()}`;
   $('.dow', el).textContent = DOW[d.getDay()];
   const s = $('.state', el); s.textContent = st.text; s.className = 'state ' + (st.lit ? 'lit' : 'unlit');
-  $('.title', el).textContent = f.title;
+  $('.title', el).innerHTML = wbrTitle(f.title);
   $('.sub', el).textContent = subOf(f);
   $('.ov', el).textContent = f.overview || '';
   $('.amb', el).style.backgroundImage = `url("${f.backdrop ? IMG + 'w300' + f.backdrop : bgUrl(f)}")`;
@@ -1049,7 +1053,7 @@ function infoHTML(f) {
     return `
   <div class="imeta">
     <p class="when"><span class="date">${d.getMonth() + 1}.${d.getDate()}</span><span class="dow">${DOW[d.getDay()]}</span><span class="state ${st.lit ? 'lit' : 'unlit'}">${st.text}</span></p>
-    <h2 class="title">${esc(f.title)}</h2>
+    <h2 class="title">${wbrTitle(f.title)}</h2>
     <p class="sub">${esc(subOf(f))}</p>
   </div>${detailsHTML(f, vi)}`;
   }
@@ -1058,7 +1062,7 @@ function infoHTML(f) {
     ${f.poster ? `<img class="poster" src="${IMG}w185${esc(f.poster)}" alt="">` : ''}
     <div>
       <p class="idate">${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日（${DOW[d.getDay()]}）公開</p>
-      <h3>${esc(f.title)}</h3>
+      <h3>${wbrTitle(f.title)}</h3>
       ${f.otitle && f.otitle !== f.title ? `<p class="iorig">${esc(f.otitle)}</p>` : ''}
       <p class="isub">${esc(subOf(f))}</p>
     </div>
