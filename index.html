@@ -616,6 +616,8 @@ function setX(x, animate) {
   const tr = `translate3d(${x}px,0,0)`;
   track.style.transition = t; player.style.transition = t;
   track.style.transform = tr; player.style.transform = tr;
+  // 縦画面で詳細を開いているときは、詳細も作品と一緒に横へ動かす（動画の所をなぞっても、詳細の所をなぞっても同じ動きにする）
+  if (stage.classList.contains('inl') && sheetOpen === 'info') { sheetBody.style.transition = t; sheetBody.style.transform = x ? tr : ''; }
 }
 function go(dir) {
   if (animating) finalize();
@@ -717,7 +719,7 @@ const P = {
     const vars = { autoplay: 1, mute: 1, controls: 0, playsinline: 1, rel: 0, fs: 0, disablekb: 1, iv_load_policy: 3, cc_load_policy: 0, hl: 'ja' };
     if (/^https?:$/.test(location.protocol)) vars.origin = location.origin;
     this.yt = new YT.Player('yt', { width: '100%', height: '100%', videoId: key, playerVars: vars,
-      events: { onReady: () => this.onReady(), onStateChange: e => this.onState(e.data), onError: e => this.onError(e.data) } });
+      events: { onReady: () => this.onReady(), onStateChange: e => this.onState(e.data), onError: e => this.onError(e.data), onApiChange: () => this.noCaptions() } });
     this.watch(key);
   },
   onReady() {
