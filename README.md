@@ -29,7 +29,7 @@
 - `data/films.json` … 作品と予告編の一覧。**自動で作るファイルなので手で編集しない**。日本の公開日が「今日の1か月前〜2か月後」の作品のうち、YouTube の予告編がある作品だけが入る
 - `scripts/fetch-films.mjs` … TMDB から上のファイルを作るスクリプト
 - `.github/workflows/films.yml` … 毎朝 6:13（日本時間）にスクリプトを実行し、変わっていれば `main` にコミットする。Actions の画面から手動でも実行できる（Update films → Run workflow）
-- `manifest.webmanifest`・`icon*` … ホーム画面に追加したときの名前とアイコン
+- `manifest.webmanifest`・`icons/` … ホーム画面に追加したときの名前とアイコン
 
 ページは `data/films.json` を1回読むだけで、閲覧時に TMDB へはアクセスしない。表示する期間は開いた日に合わせてページ側で絞り込む。
 

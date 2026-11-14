@@ -27,7 +27,7 @@ export default {
     const set = (attr, value) => ({ element(e) { e.setAttribute(attr, value); } });
     const rw = new HTMLRewriter()
       .on('meta[property="og:url"]', set('content', url.origin + '/'))
-      .on('meta[property="og:image"]', set('content', url.origin + '/icon-512.png'));
+      .on('meta[property="og:image"]', set('content', url.origin + '/icons/icon-512.png'));
 
     const id = url.searchParams.get('f');
     const f = id && /^\d{1,9}$/.test(id) ? await film(env, url.origin, id).catch(() => null) : null;
@@ -39,7 +39,7 @@ export default {
     const facts = [`${m}月${d}日（${dow}）公開`, f.r ? `${f.r}分` : '', (f.g || []).slice(0, 2).map(g => SHORT[g] || g).join('／')].filter(Boolean).join('・');
     const desc = `${f.t}（${facts}）の予告編。trailadder では公開日順に予告編をスワイプで観られます。`;
     const canon = `${url.origin}/?f=${id}`;
-    const image = f.b ? IMG + 'w780' + f.b : f.p ? IMG + 'w500' + f.p : url.origin + '/icon-512.png';
+    const image = f.b ? IMG + 'w780' + f.b : f.p ? IMG + 'w500' + f.p : url.origin + '/icons/icon-512.png';
 
     return new HTMLRewriter()
       .on('title', { element(e) { e.setInnerContent(title); } })
