@@ -23,28 +23,30 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="preconnect" href="https://image.tmdb.org">
 <script>
-/* フォントの選択（設定画面。この端末に保存）。既定は cinemaladder と同じ端末標準のフォント */
+/* フォントの選択（設定画面。この端末に保存）。既定は Urbanist → IBM Plex Sans JP。sys は cinemaladder と同じ端末標準のフォント */
 var FONTS = (function () {
   var G = 'https://fonts.googleapis.com/css2?', A = '', i;
   for (i = 32; i < 127; i++) A += String.fromCharCode(i);     // 英数字と記号（ASCII）だけを取り出す
   var seedA = G + 'family=LINE+Seed+JP:wght@400;700&text=' + encodeURIComponent(A) + '&display=swap',
       plex = G + 'family=IBM+Plex+Sans+JP:wght@300;400;500;600&display=swap';
   return {
-    '':        { name: 'デフォルト', css: [], stack: '' },
-    urban:     { name: 'Urbanist → IBM Plex Sans JP', css: [G + 'family=Urbanist:wght@300;400;500;600&display=swap', plex], stack: '"Urbanist","IBM Plex Sans JP"' },
+    urban:     { name: 'Urbanist → IBM Plex Sans JP（デフォルト）', css: [G + 'family=Urbanist:wght@300;400;500;600&display=swap', plex], stack: '"Urbanist","IBM Plex Sans JP",var(--font0)' },
+    sys:       { name: '端末標準（cinemaladder と同じ）', css: [], stack: '' },
     seed:      { name: 'LINE Seed JP', css: [G + 'family=LINE+Seed+JP:wght@400;700&display=swap'], stack: '"LINE Seed JP"' },
     seedA:     { name: '英数字だけ LINE Seed JP', css: [seedA], stack: '"LINE Seed JP",var(--font0)' },
     seedAplex: { name: '英数字だけ LINE Seed JP → IBM Plex Sans JP', css: [seedA, plex], stack: '"LINE Seed JP","IBM Plex Sans JP",var(--font0)' }
   };
 })();
+var FONT_DEFAULT = 'urban';
 function applyFont(k) {
-  var f = FONTS[k] || FONTS[''], r = document.documentElement;
+  if (!FONTS[k]) k = FONT_DEFAULT;
+  var f = FONTS[k], r = document.documentElement;
   document.querySelectorAll('link[data-font]').forEach(function (l) { l.remove(); });
   f.css.forEach(function (u) { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = u; l.dataset.font = ''; document.head.appendChild(l); });
   if (f.stack) r.style.setProperty('--font', f.stack + ',system-ui,sans-serif'); else r.style.removeProperty('--font');
-  r.dataset.font = FONTS[k] ? k : '';
+  r.dataset.font = k;
 }
-(function () { var k = ''; try { k = localStorage.getItem('tl.font') || ''; } catch (e) {} applyFont(k); })();
+(function () { var k = ''; try { k = localStorage.getItem('tl.font') || ''; } catch (e) {} applyFont(k); })();   // 保存がなければ既定
 </script>
 <style>
 :root{
@@ -1042,7 +1044,7 @@ function settingsHTML() {
   ${coarse ? `<div class="row"><span>画面の向き<small>横画面は、本体の画面の回転ロックをオンにしてお使いください</small></span><button class="btn" type="button" data-act="mode">${prefs.mode === 'landscape' ? '縦画面にする' : '横画面にする'}</button></div>` : ''}
   ${coarse && prefs.mode === 'landscape' ? `<div class="row"><span>横画面で倒す向き<small>本体をどちらに倒して観るかを入れ替えます</small></span><button class="btn" type="button" data-act="flip">反対向きにする</button></div>` : ''}
   <div class="row fontrow"><span>フォント<small>この端末に保存されます</small></span>
-    <div class="fonts">${Object.keys(FONTS).map(k => `<button type="button" data-act="font" data-v="${k}" aria-pressed="${(document.documentElement.dataset.font || '') === k}">${FONTS[k].name}</button>`).join('')}</div></div>
+    <div class="fonts">${Object.keys(FONTS).map(k => `<button type="button" data-act="font" data-v="${k}" aria-pressed="${document.documentElement.dataset.font === k}">${FONTS[k].name}</button>`).join('')}</div></div>
   <div class="row"><span>作品データ<small>${data.films.length}本・${t.getMonth() + 1}月${t.getDate()}日 ${t.getHours()}:${pad(t.getMinutes())} 更新（毎朝自動で更新）</small></span><button class="btn" type="button" data-act="reload">読み込み直す</button></div>
   <div class="row"><span>音が出ないとき<small>映像を一度だけ直接タップして再生します</small></span><button class="btn" type="button" data-act="unlock">直接タップに切り替える</button></div>
   <p class="credit">作品情報と画像は TMDB から取得しています。This product uses the TMDB API but is not endorsed or certified by TMDB. 映像は YouTube の埋め込みプレイヤーで再生しています。</p>`;
@@ -1086,7 +1088,7 @@ function sheetAct(target, viaTouch) {
   else if (act === 'flip') { prefs.flip = !prefs.flip; savePrefs(); layout(); if (!rot) toast('縦向きで開いたときに反映されます'); }
   else if (act === 'font') {
     const k = b.dataset.v; applyFont(k);
-    try { k ? localStorage.setItem('tl.font', k) : localStorage.removeItem('tl.font'); } catch (e) {}
+    try { localStorage.setItem('tl.font', k); } catch (e) {}
     b.parentNode.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
   }
   else if (act === 'reload') { closeSheet(); start(true); }
