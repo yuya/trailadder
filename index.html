@@ -23,27 +23,31 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="preconnect" href="https://image.tmdb.org">
 <script>
-/* フォントの選択（設定画面。この端末に保存）。既定は Urbanist → IBM Plex Sans JP。sys は cinemaladder と同じ端末標準のフォント */
+/* フォントの選択（設定画面。この端末に保存）。
+   既定は Inter → IBM Plex Sans JP。サイト名と作品の題名だけは Urbanist → IBM Plex Sans JP（--name）。sys は cinemaladder と同じ端末標準のフォント */
 var FONTS = (function () {
   var G = 'https://fonts.googleapis.com/css2?', A = '', i;
   for (i = 32; i < 127; i++) A += String.fromCharCode(i);     // 英数字と記号（ASCII）だけを取り出す
   var seedA = G + 'family=LINE+Seed+JP:wght@400;700&text=' + encodeURIComponent(A) + '&display=swap',
-      plex = G + 'family=IBM+Plex+Sans+JP:wght@300;400;500;600&display=swap';
+      plex = G + 'family=IBM+Plex+Sans+JP:wght@300;400;500;600&display=swap',
+      urban = G + 'family=Urbanist:wght@400;500;600&display=swap';
   return {
-    urban:     { name: 'Urbanist → IBM Plex Sans JP（デフォルト）', css: [G + 'family=Urbanist:wght@300;400;500;600&display=swap', plex], stack: '"Urbanist","IBM Plex Sans JP",var(--font0)' },
+    inter:     { name: 'Inter → IBM Plex Sans JP（デフォルト）', css: [G + 'family=Inter:wght@300;400;500;600&display=swap', urban, plex], stack: '"Inter","IBM Plex Sans JP",var(--font0)', name2: '"Urbanist","IBM Plex Sans JP",var(--font0)' },
+    urban:     { name: 'Urbanist → IBM Plex Sans JP', css: [urban.replace('400;500;600', '300;400;500;600'), plex], stack: '"Urbanist","IBM Plex Sans JP",var(--font0)' },
     sys:       { name: '端末標準（cinemaladder と同じ）', css: [], stack: '' },
     seed:      { name: 'LINE Seed JP', css: [G + 'family=LINE+Seed+JP:wght@400;700&display=swap'], stack: '"LINE Seed JP"' },
     seedA:     { name: '英数字だけ LINE Seed JP', css: [seedA], stack: '"LINE Seed JP",var(--font0)' },
     seedAplex: { name: '英数字だけ LINE Seed JP → IBM Plex Sans JP', css: [seedA, plex], stack: '"LINE Seed JP","IBM Plex Sans JP",var(--font0)' }
   };
 })();
-var FONT_DEFAULT = 'urban';
+var FONT_DEFAULT = 'inter';
 function applyFont(k) {
   if (!FONTS[k]) k = FONT_DEFAULT;
   var f = FONTS[k], r = document.documentElement;
   document.querySelectorAll('link[data-font]').forEach(function (l) { l.remove(); });
   f.css.forEach(function (u) { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = u; l.dataset.font = ''; document.head.appendChild(l); });
   if (f.stack) r.style.setProperty('--font', f.stack + ',system-ui,sans-serif'); else r.style.removeProperty('--font');
+  if (f.name2) r.style.setProperty('--name', f.name2 + ',system-ui,sans-serif'); else r.style.removeProperty('--name');
   r.dataset.font = k;
 }
 (function () { var k = ''; try { k = localStorage.getItem('tl.font') || ''; } catch (e) {} applyFont(k); })();   // 保存がなければ既定
@@ -60,6 +64,7 @@ function applyFont(k) {
   /* cinemaladder と同じフォント指定 */
   --font0:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",Meiryo,system-ui,sans-serif;
   --font:var(--font0);
+  --name:var(--font);       /* サイト名と作品の題名 */
   --display:var(--font);
   --ui:var(--font);
 }
@@ -109,7 +114,7 @@ a{color:inherit}
 .state{flex:none;font:600 12.5px/1 var(--ui);font-feature-settings:inherit;padding:7px 12px;border-radius:99px;white-space:nowrap}
 .state.lit{background:var(--bulb);color:var(--curtain-deep)}
 .state.unlit{box-shadow:inset 0 0 0 1.5px var(--silver);background:rgba(0,0,0,.3)}
-.title{margin:0;font:500 clamp(20px,calc(var(--H) * .074),40px)/1.25 var(--display);font-feature-settings:inherit;text-wrap:balance;word-break:keep-all;overflow-wrap:anywhere;text-shadow:0 1px 14px rgba(0,0,0,.65);
+.title{margin:0;font:500 clamp(20px,calc(var(--H) * .074),40px)/1.25 var(--name);font-feature-settings:inherit;text-wrap:balance;word-break:normal;word-break:auto-phrase;overflow-wrap:anywhere;text-shadow:0 1px 14px rgba(0,0,0,.65);
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 .sub{margin:0;font:400 12.5px/1.5 var(--ui);font-feature-settings:inherit;opacity:.86;text-shadow:0 1px 6px rgba(0,0,0,.7)}
 
@@ -126,7 +131,7 @@ a{color:inherit}
 #stage:not(.hud) .h{opacity:0;pointer-events:none}
 
 #top{position:absolute;z-index:4;top:0;left:0;right:0;height:calc(46px + var(--gt));padding:var(--gt) calc(var(--gr) - 8px) 0 var(--gl);display:flex;align-items:center;gap:14px}
-.brand{flex:none;display:inline-flex;align-items:center;gap:7px;font:600 18px/1 var(--display);font-feature-settings:inherit;letter-spacing:.02em}
+.brand{flex:none;display:inline-flex;align-items:center;gap:7px;font:600 18px/1 var(--name);font-feature-settings:inherit;letter-spacing:.02em}
 .brand .mark{width:22px;height:22px;flex:none}
 .lad{color:var(--bulb)}
 .chips{display:flex;gap:6px;min-width:0}
@@ -223,7 +228,7 @@ a{color:inherit}
 .ihead{display:flex;gap:14px;align-items:flex-start;padding-right:38px}
 .poster{flex:none;width:76px;aspect-ratio:2/3;border-radius:4px;object-fit:cover;background:rgba(0,0,0,.3)}
 .idate{margin:0 0 4px;font:600 12px/1.4 var(--ui);font-feature-settings:inherit;color:var(--bulb)}
-.ihead h3{margin:0;font:500 21px/1.3 var(--display);font-feature-settings:inherit;text-wrap:balance;word-break:keep-all;overflow-wrap:anywhere}
+.ihead h3{margin:0;font:500 21px/1.3 var(--name);font-feature-settings:inherit;text-wrap:balance;word-break:normal;word-break:auto-phrase;overflow-wrap:anywhere}
 .iorig,.isub{margin:3px 0 0;font:400 12px/1.5 var(--ui);font-feature-settings:inherit;opacity:.76}
 .overview{margin:0;font:400 13.5px/1.85 var(--ui);font-feature-settings:inherit}
 .ovnote{margin:-6px 0 0;font:400 11.5px/1.6 var(--ui);font-feature-settings:inherit;opacity:.6}
@@ -255,7 +260,7 @@ a{color:inherit}
 
 #veil{position:absolute;inset:0;z-index:8;display:grid;align-content:center;padding:0 var(--gr) 0 calc(var(--gl) + 5%)}
 .vin{display:grid;gap:12px;max-width:34rem}
-.vbrand{margin:0 0 4px;font:400 clamp(38px,calc(var(--H) * .17),80px)/1 var(--display);font-feature-settings:inherit}
+.vbrand{margin:0 0 4px;font:400 clamp(38px,calc(var(--H) * .17),80px)/1 var(--name);font-feature-settings:inherit}
 #vmsg{margin:0;font:500 18px/1.45 var(--display);font-feature-settings:inherit}
 #vsub{margin:0;font:400 12.5px/1.7 var(--ui);font-feature-settings:inherit;opacity:.78;font-variant-numeric:tabular-nums}
 .vbar{height:3px;max-width:22rem;border-radius:2px;overflow:hidden;background:rgba(255,245,220,.2)}
@@ -341,7 +346,7 @@ a{color:inherit}
   <div id="progress"><i></i></div>
 
   <header id="top" class="h">
-    <span class="brand"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#141418"/><path d="M11.6 6V20.2A4.6 4.6 0 0 0 16.2 24.8H22" fill="none" stroke="#FFFFFF" stroke-width="4.2"/><path d="M6.2 12.6H22" fill="none" stroke="#FFFFFF" stroke-width="4.2"/><rect x="21.5" y="6" width="3.6" height="20" fill="#FFC93A"/></svg><span>trai<span class="lad">ladder</span></span></span>
+    <span class="brand"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#141418"/><g transform="translate(8.373 27.000) scale(0.01467 -0.01467)"><path fill="#FFFFFF" d="M656 756H462V0H218V756H70V1000H218V1314H462V1000H656Z"/><path fill="#FFC93A" transform="translate(606 0)" d="M120 0V1500H364V0Z"/></g></svg><span>trai<span class="lad">ladder</span></span></span>
     <div class="chips" id="chips" role="group" aria-label="作品の絞り込み"></div>
     <div class="tools">
       <button class="ib" id="bSound" type="button" aria-label="音を出す">
