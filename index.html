@@ -202,6 +202,7 @@ a{color:inherit}
 .day.unlit i{box-shadow:inset 0 0 0 1.2px var(--silver)}
 .day i.cur{background:var(--light);box-shadow:0 0 0 2.5px rgba(255,245,220,.32),0 0 12px rgba(255,255,255,.9);transform:scale(1.4)}
 .day b{font:600 8.5px/1 var(--ui);font-feature-settings:inherit;opacity:.8;font-variant-numeric:tabular-nums}
+.day b.at{opacity:1;white-space:nowrap;position:relative;z-index:1}
 .day.today::after{content:"";position:absolute;left:50%;top:-4px;bottom:0;width:1px;margin-left:-.5px;background:rgba(255,245,220,.55);z-index:-1}
 .days.intro .day.lit i{animation:lightup .5s both;animation-delay:calc(var(--k) * 14ms)}
 @keyframes lightup{from{background:transparent;box-shadow:inset 0 0 0 1.2px var(--silver)}}
@@ -905,7 +906,7 @@ function buildRail() {
     railDays.push(s);
     let dots = '';
     for (let j = 0; j < Math.min(list.length, MAXDOT); j++) dots += '<i></i>';
-    h += `<div class="day ${s <= tS ? 'lit' : 'unlit'}${s === tS ? ' today' : ''}" style="--k:${k}">${dots}${list.length > MAXDOT ? `<b>${list.length}</b>` : ''}</div>`;
+    h += `<div class="day ${s <= tS ? 'lit' : 'unlit'}${s === tS ? ' today' : ''}" style="--k:${k}">${dots}${list.length > MAXDOT ? `<b data-n="${list.length}">${list.length}</b>` : ''}</div>`;
     const left = ((k + .5) / railN * 100).toFixed(2);
     if (s === tS) ax += `<span class="now" style="left:${left}%">今日</span>`;
     else if (Math.abs(k - tK) > near && k > 2 && k < railN - 3 && (narrow ? d.getDate() === 1 : d.getDay() === 5)) ax += `<span style="left:${left}%">${narrow ? `${d.getMonth() + 1}月` : `${d.getMonth() + 1}/${d.getDate()}`}</span>`;
@@ -917,8 +918,12 @@ function markRail() {
   const f = view[idx]; if (!f) return;
   const k = railDays.indexOf(f.date); if (k < 0) return;
   const list = byDay.get(f.date) || [];
-  const dot = daysEl.children[k].querySelectorAll('i')[Math.min(list.indexOf(idx), MAXDOT - 1)];
+  // 6本以上の日は、点の数（MAXDOT）に本数を割り振って、白い点が下から上へ進むようにする。上の数字は「何本目／全部で何本」
+  const n = list.length, pos = list.indexOf(idx);
+  const dot = daysEl.children[k].querySelectorAll('i')[n > MAXDOT ? Math.floor(pos * MAXDOT / n) : pos];
   if (dot) dot.classList.add('cur');
+  const ob = $('b.at', daysEl); if (ob) { ob.classList.remove('at'); ob.textContent = ob.dataset.n; }
+  const b = $('b', daysEl.children[k]); if (b) { b.classList.add('at'); b.textContent = `${pos + 1}/${n}`; }
 }
 function scrub(e) {
   const r = uiRect(daysEl), x = toUI(e.clientX, e.clientY).x - r.left;
