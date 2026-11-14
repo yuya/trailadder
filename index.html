@@ -146,6 +146,12 @@ a{color:inherit}
 #stage.muted #bSound{width:auto;padding:0 14px 0 10px;background:var(--bulb);color:var(--curtain-deep);margin-right:4px;height:34px}
 #stage.muted #bSound span{display:inline}
 #stage.muted #bSound svg{width:20px;height:20px}
+/* 上の段が収まらないときは、段階的に詰める（fitTop が c1〜c4 を付ける） */
+#top.c1 .chip small{display:none}
+#top.c2{gap:10px}#top.c2 .chips{gap:4px}#top.c2 .chip{padding:0 10px}#top.c2 .tools{gap:0}#top.c2 .ib{width:38px}
+#top.c3 .brand .wm{display:none}
+#stage.muted #top.c4 #bSound span{display:none}
+#stage.muted #top.c4 #bSound{width:38px;padding:0}
 #stage.muted #bSound .on,#stage:not(.muted) #bSound .off{display:none}
 #stage.fill #bFill .out,#stage:not(.fill) #bFill .in{display:none}
 #stage.tall #bFill{display:none}
@@ -345,7 +351,7 @@ a{color:inherit}
   <div id="progress"><i></i></div>
 
   <header id="top" class="h">
-    <span class="brand"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#141418"/><g transform="translate(8.080 27.000) scale(0.01467 -0.01467)"><path fill="#FFFFFF" d="M664 724H484V0H208V724H70V1000H208V1314H484V1000H664Z"/><path fill="#FFC93A" transform="translate(614 0)" d="M120 0V1500H396V0Z"/></g></svg><span>trai<span class="lad">ladder</span></span></span>
+    <span class="brand"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#141418"/><g transform="translate(8.080 27.000) scale(0.01467 -0.01467)"><path fill="#FFFFFF" d="M664 724H484V0H208V724H70V1000H208V1314H484V1000H664Z"/><path fill="#FFC93A" transform="translate(614 0)" d="M120 0V1500H396V0Z"/></g></svg><span class="wm">trai<span class="lad">ladder</span></span></span>
     <div class="chips" id="chips" role="group" aria-label="作品の絞り込み"></div>
     <div class="tools">
       <button class="ib" id="bSound" type="button" aria-label="音を出す">
@@ -514,6 +520,7 @@ function layout() {
   stage.classList.toggle('ccw', rot === -90);
   stage.classList.toggle('narrow', W < 760);
   stage.classList.toggle('tall', !rot && H > W);
+  fitTop();
   if (sheetOpen === 'info' && stage.classList.contains('tall') === stage.classList.contains('split')) openSheet('info');   // turned the phone: switch between in-place and side-by-side
   const bo = $('#bOrient');
   bo.hidden = !coarse;
@@ -739,8 +746,16 @@ const P = {
     f.blocked = true; updateVinfo(); setHud(true);
   }
 };
+/* 上の段（サイト名・絞り込み・ボタン）が1行に収まるまで、順に詰める。回転中も stage の座標で測る（縦画面は絞り込みが2行目なので不要） */
+function fitTop() {
+  const top = $('#top'), tools = $('.tools', top);
+  top.classList.remove('c1', 'c2', 'c3', 'c4');
+  if (stage.classList.contains('tall')) return;
+  const fits = () => { const l = $('#chips').lastElementChild || $('.brand', top); return l.offsetLeft + l.offsetWidth <= tools.offsetLeft - 8; };
+  for (const c of ['c1', 'c2', 'c3', 'c4']) { if (fits()) return; top.classList.add(c); }
+}
 function syncSound() {
-  stage.classList.toggle('muted', P.muted);
+  stage.classList.toggle('muted', P.muted); fitTop();
   $('#bSound').setAttribute('aria-label', P.muted ? '音を出す' : '音を消す');
 }
 function toggleSound() {
@@ -835,9 +850,10 @@ function renderChips() {
   if (cur.map(b => b.dataset.f).join() === items.map(x => x[0]).join()) {
     // 同じ並びなら書き換えずに状態だけ直す（押したボタンを作り直すと、疑似触覚のスイッチがクリックの途中で消える）
     cur.forEach((b, i) => { b.setAttribute('aria-pressed', b.dataset.f === filter); b.querySelector('small').textContent = items[i][2]; });
-    return;
+    fitTop(); return;
   }
   box.innerHTML = items.map(([key, label, n]) => `<button class="chip" type="button" data-f="${key}" aria-pressed="${key === filter}">${label}<small>${n}</small></button>`).join('');
+  fitTop();
 }
 function setFilter(key, initial) {
   const cur = initial ? null : view[idx];
