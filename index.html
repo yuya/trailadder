@@ -146,6 +146,8 @@ a{color:inherit}
 #stage.muted #bSound{width:auto;padding:0 14px 0 10px;background:var(--bulb);color:var(--curtain-deep);margin-right:4px;height:34px}
 #stage.muted #bSound span{display:inline}
 #stage.muted #bSound svg{width:20px;height:20px}
+#stage.ytt:not(.tall) .brand,#stage.ytt:not(.tall) #chips{opacity:0;pointer-events:none}
+.brand,#chips{transition:opacity .6s}
 /* 上の段が収まらないときは、段階的に詰める（fitTop が c1〜c4 を付ける） */
 #top.c1 .chip small{display:none}
 #top.c2{gap:10px}#top.c2 .chips{gap:4px}#top.c2 .chip{padding:0 10px}#top.c2 .tools{gap:0}#top.c2 .ib{width:38px}
@@ -655,6 +657,13 @@ function updateVinfo() {
 }
 
 /* ---------- YouTube: one player for every film, so a single tap unlocks sound for the session ---------- */
+/* YouTube は再生の始まりの数秒と一時停止中に、左上へ動画の題名を出す。その間はサイト名と絞り込みを薄くして重ならないようにする（横長の画面だけ） */
+let ytTitleT = 0;
+function ytTitle(up) {
+  clearTimeout(ytTitleT);
+  if (up) stage.classList.add('ytt');
+  else ytTitleT = setTimeout(() => stage.classList.remove('ytt'), 3500);   // 再生が続くと、YouTube の題名は3秒ほどで消える
+}
 const P = {
   yt: null, ready: false, creating: false, state: -1, key: null, want: null, muted: true, stallT: 0, apiP: null, capKey: null,
   api() {
@@ -684,10 +693,11 @@ const P = {
     }
     if (!this.ready) return;
     if (key === this.key && this.state !== 0) { this.yt.playVideo(); if (this.state === 1) this.onState(1); }
-    else { this.key = key; this.yt.loadVideoById(key); }
+    else { this.key = key; this.yt.loadVideoById(key); ytTitle(true); }
     this.watch(key);
   },
   create(key) {
+    ytTitle(true);
     this.key = key;
     const vars = { autoplay: 1, mute: 1, controls: 0, playsinline: 1, rel: 0, fs: 0, disablekb: 1, iv_load_policy: 3, cc_load_policy: 0, hl: 'ja' };
     if (/^https?:$/.test(location.protocol)) vars.origin = location.origin;
@@ -715,15 +725,18 @@ const P = {
       stage.classList.remove('stalled', 'buffering');
       if (isCur) { stage.classList.add('playing'); stage.classList.remove('loading'); roles.cur.classList.add('live'); }
       if (this.capKey !== this.key) { this.capKey = this.key; this.noCaptions(); setTimeout(() => this.noCaptions(), 1500); }
+      ytTitle(false);
       if (direct) { if (direct === 'sound') { this.muted = false; syncSound(); } exitDirect(false); }
       setHud(hudOn);
     } else if (s === 3) {
       stage.classList.add('buffering');
     } else if (s === 2) {
       stage.classList.remove('playing', 'buffering');
+      ytTitle(true);
       if (isCur && !direct) setHud(true);
     } else if (s === 0) {
       stage.classList.remove('playing', 'buffering', 'loading');
+      ytTitle(true);
       if (isCur) { if (prefs.autoNext && view.length > 1 && !sheetOpen) go(1); else setHud(true); }
     }
   },
