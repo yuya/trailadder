@@ -222,6 +222,9 @@ a{color:inherit}
 #seekfx.r{right:12%}
 #seekfx.c{left:50%;margin-left:-48px}
 #seekfx.on{animation:seek .6s}
+/* 再生・一時停止の丸は、YouTube の映像の中心に合わせる（横画面では画面の縦中央。縦画面は --mid が映像の中心） */
+#stage:not(.tall) #seekfx{top:50%}
+#stage.split #seekfx.c{left:calc((100% - var(--pw)) / 2)}
 @keyframes seek{0%{opacity:0;transform:scale(.8)}25%{opacity:1;transform:none}100%{opacity:0}}
 
 #direct{position:absolute;z-index:7;left:50%;top:calc(var(--gt) + 52px);transform:translateX(-50%);display:flex;align-items:center;gap:12px;white-space:nowrap;
