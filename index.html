@@ -109,7 +109,7 @@ a{color:inherit}
 #stage:not(.hud) .h{opacity:0;pointer-events:none}
 
 #top{position:absolute;z-index:4;top:0;left:0;right:0;height:calc(46px + var(--gt));padding:var(--gt) calc(var(--gr) - 8px) 0 var(--gl);display:flex;align-items:center;gap:14px}
-.brand{flex:none;display:inline-flex;align-items:center;gap:7px;font:800 18px/1 var(--name);font-feature-settings:inherit;letter-spacing:.01em}   /* cinemaladder のサイト名と同じ太さ・字間 */
+.brand{flex:none;display:inline-flex;text-decoration:none;-webkit-tap-highlight-color:transparent;align-items:center;gap:7px;font:800 18px/1 var(--name);font-feature-settings:inherit;letter-spacing:.01em}   /* cinemaladder のサイト名と同じ太さ・字間。押すと ?f= のないトップ（/）を開き直す */
 .brand .mark{width:22px;height:22px;flex:none}
 .lad{color:var(--bulb)}
 .chips{display:flex;gap:6px;min-width:0}
@@ -337,7 +337,7 @@ html.stg #envtag{display:block}
   <div id="progress"><i></i></div>
 
   <header id="top" class="h">
-    <span class="brand"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#141418"/><g transform="translate(8.080 27.000) scale(0.01467 -0.01467)"><path fill="#FFFFFF" d="M664 724H484V0H208V724H70V1000H208V1314H484V1000H664Z"/><path fill="#FFC93A" transform="translate(614 0)" d="M120 0V1500H396V0Z"/></g></svg><span class="wm">trai<span class="lad">ladder</span></span></span>
+    <a class="brand" href="/" aria-label="trailadder（最初から観る）"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#141418"/><g transform="translate(8.080 27.000) scale(0.01467 -0.01467)"><path fill="#FFFFFF" d="M664 724H484V0H208V724H70V1000H208V1314H484V1000H664Z"/><path fill="#FFC93A" transform="translate(614 0)" d="M120 0V1500H396V0Z"/></g></svg><span class="wm">trai<span class="lad">ladder</span></span></a>
     <div class="chips" id="chips" role="group" aria-label="作品の絞り込み"></div>
     <div class="tools">
       <button class="ib" id="bSound" type="button" aria-label="音を出す">
