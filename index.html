@@ -22,37 +22,14 @@
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="preconnect" href="https://image.tmdb.org">
+<!-- フォント：全体は Inter → IBM Plex Sans JP、サイト名と作品の題名は Urbanist → IBM Plex Sans JP。Google Fonts を非同期で読み込む（cinemaladder と同じ読み込み方） -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Urbanist:wght@400;500;600;800&amp;family=IBM+Plex+Sans+JP:wght@300;400;500;600&amp;display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Urbanist:wght@400;500;600;800&amp;family=IBM+Plex+Sans+JP:wght@300;400;500;600&amp;display=swap"></noscript>
 <script>
 /* 確認用（stg）のアドレス（stg.… / stg-….）で開いたときだけ、画面に印を出す */
 if (/^stg[.-]/.test(location.hostname)) document.documentElement.classList.add('stg');
-/* フォントの選択（設定画面。この端末に保存）。
-   既定は Inter → IBM Plex Sans JP。サイト名と作品の題名だけは Urbanist → IBM Plex Sans JP（--name）。sys は cinemaladder と同じ端末標準のフォント */
-var FONTS = (function () {
-  var G = 'https://fonts.googleapis.com/css2?', A = '', i;
-  for (i = 32; i < 127; i++) A += String.fromCharCode(i);     // 英数字と記号（ASCII）だけを取り出す
-  var seedA = G + 'family=LINE+Seed+JP:wght@400;700&text=' + encodeURIComponent(A) + '&display=swap',
-      plex = G + 'family=IBM+Plex+Sans+JP:wght@300;400;500;600&display=swap',
-      urban = G + 'family=Urbanist:wght@400;500;600;800&display=swap';
-  return {
-    inter:     { name: 'Inter → IBM Plex Sans JP（デフォルト）', css: [G + 'family=Inter:wght@300;400;500;600&display=swap', urban, plex], stack: '"Inter","IBM Plex Sans JP",var(--font0)', name2: '"Urbanist","IBM Plex Sans JP",var(--font0)' },
-    urban:     { name: 'Urbanist → IBM Plex Sans JP', css: [urban.replace('400;500;600;800', '300;400;500;600;800'), plex], stack: '"Urbanist","IBM Plex Sans JP",var(--font0)' },
-    sys:       { name: '端末標準（cinemaladder と同じ）', css: [], stack: '' },
-    seed:      { name: 'LINE Seed JP', css: [G + 'family=LINE+Seed+JP:wght@400;700&display=swap'], stack: '"LINE Seed JP"' },
-    seedA:     { name: '英数字だけ LINE Seed JP', css: [seedA], stack: '"LINE Seed JP",var(--font0)' },
-    seedAplex: { name: '英数字だけ LINE Seed JP → IBM Plex Sans JP', css: [seedA, plex], stack: '"LINE Seed JP","IBM Plex Sans JP",var(--font0)' }
-  };
-})();
-var FONT_DEFAULT = 'inter';
-function applyFont(k) {
-  if (!FONTS[k]) k = FONT_DEFAULT;
-  var f = FONTS[k], r = document.documentElement;
-  document.querySelectorAll('link[data-font]').forEach(function (l) { l.remove(); });
-  f.css.forEach(function (u) { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = u; l.dataset.font = ''; document.head.appendChild(l); });
-  if (f.stack) r.style.setProperty('--font', f.stack + ',system-ui,sans-serif'); else r.style.removeProperty('--font');
-  if (f.name2) r.style.setProperty('--name', f.name2 + ',system-ui,sans-serif'); else r.style.removeProperty('--name');
-  r.dataset.font = k;
-}
-(function () { var k = ''; try { k = localStorage.getItem('tl.font') || ''; } catch (e) {} applyFont(k); })();   // 保存がなければ既定
 </script>
 <style>
 :root{
@@ -63,14 +40,13 @@ function applyFont(k) {
   --light:#fff5dc;          /* 映写機の光 */
   --bulb:#ffc93a;           /* 点灯した電球 */
   --silver:#b9bdc9;         /* 消灯した電球、銀幕 */
-  /* cinemaladder と同じフォント指定 */
+  /* --font0 は cinemaladder と同じ端末標準のフォント（Google Fonts が届くまでと、届かないときに使う） */
   --font0:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",Meiryo,system-ui,sans-serif;
-  --font:var(--font0);
-  --name:var(--font);       /* サイト名と作品の題名 */
+  --font:"Inter","IBM Plex Sans JP",var(--font0);
+  --name:"Urbanist","IBM Plex Sans JP",var(--font0);   /* サイト名と作品の題名 */
   --display:var(--font);
   --ui:var(--font);
 }
-.title,.ihead h3{font-weight:600}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{margin:0;height:100%;background:#000}
@@ -116,7 +92,7 @@ a{color:inherit}
 .state{flex:none;font:600 12.5px/1 var(--ui);font-feature-settings:inherit;padding:7px 12px;border-radius:99px;white-space:nowrap}
 .state.lit{background:var(--bulb);color:var(--curtain-deep)}
 .state.unlit{box-shadow:inset 0 0 0 1.5px var(--silver);background:rgba(0,0,0,.3)}
-.title{margin:0;font:500 clamp(20px,calc(var(--H) * .074),40px)/1.25 var(--name);font-feature-settings:inherit;text-wrap:pretty;word-break:keep-all;overflow-wrap:anywhere;text-shadow:0 1px 14px rgba(0,0,0,.65);
+.title{margin:0;font:500 clamp(20px,calc(var(--H) * .074),40px)/1.25 var(--name);font-feature-settings:inherit;text-wrap:wrap;word-break:keep-all;overflow-wrap:anywhere;text-shadow:0 1px 14px rgba(0,0,0,.65);
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 .sub{margin:0;font:400 12.5px/1.5 var(--ui);font-feature-settings:inherit;opacity:.86;text-shadow:0 1px 6px rgba(0,0,0,.7)}
 
@@ -241,10 +217,12 @@ a{color:inherit}
 #bClose{position:absolute;z-index:1;top:calc(var(--gt) + 2px);right:calc(var(--gr) - 8px)}
 #sheetBody{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;touch-action:none;padding:calc(var(--gt) + 14px) var(--gr) calc(var(--gb) + 16px) 22px;display:flex;flex-direction:column;gap:14px}
 #sheetBody>*{flex:none}
-.ihead{display:flex;gap:14px;align-items:flex-start;padding-right:38px}
+.ihead{display:flex;gap:14px;align-items:flex-start}
+.ihead>div{flex:1;min-width:0}
+.idate{padding-right:38px}   /* × の分は日付の行だけ空ける。題名はその下なので、右端まで使う */
 .poster{flex:none;width:76px;aspect-ratio:2/3;border-radius:4px;object-fit:cover;background:rgba(0,0,0,.3)}
 .idate{margin:0 0 4px;font:600 12px/1.4 var(--ui);font-feature-settings:inherit;color:var(--bulb)}
-.ihead h3{margin:0;font:500 21px/1.3 var(--name);font-feature-settings:inherit;text-wrap:pretty;word-break:keep-all;overflow-wrap:anywhere}
+.ihead h3{margin:0;font:500 21px/1.3 var(--name);font-feature-settings:inherit;text-wrap:wrap;word-break:keep-all;overflow-wrap:anywhere}
 .iorig,.isub{margin:3px 0 0;font:400 12px/1.5 var(--ui);font-feature-settings:inherit;opacity:.76}
 .overview{margin:0;font:400 13.5px/1.85 var(--ui);font-feature-settings:inherit}
 .ovnote{margin:-6px 0 0;font:400 11.5px/1.6 var(--ui);font-feature-settings:inherit;opacity:.6}
@@ -264,10 +242,6 @@ a{color:inherit}
 .btn{flex:none;font:600 12.5px/1 var(--ui);font-feature-settings:inherit;padding:10px 14px;border-radius:99px;box-shadow:inset 0 0 0 1.2px rgba(255,245,220,.5)}
 .btn:active{background:rgba(255,245,220,.14)}
 .hx{position:absolute;z-index:2;left:0;top:0;width:100%;height:100%;margin:0;padding:0;opacity:0;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-.fontrow{display:grid;justify-content:stretch;gap:10px}
-.fonts{display:flex;flex-wrap:wrap;gap:6px}
-.fonts button{padding:8px 12px;border-radius:99px;box-shadow:inset 0 0 0 1.2px rgba(255,245,220,.4);font:400 12.5px/1.2 var(--ui);font-feature-settings:inherit;text-align:left}
-.fonts button[aria-pressed="true"]{background:var(--light);color:var(--curtain-deep);box-shadow:none}
 .sw{-webkit-appearance:none;appearance:none;flex:none;width:44px;height:26px;margin:0;border-radius:99px;background:rgba(255,245,220,.22);position:relative;transition:background .15s;cursor:pointer}
 .sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--light);transition:transform .15s}
 .sw:checked{background:var(--bulb)}
@@ -446,7 +420,20 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&a
 /* 題名の改行位置。日本語は単語の区切りに <wbr> を入れ、CSS は「単語の途中では折らない」（keep-all）にする。
    こうすると、Chrome でも Safari でも、区切りのよい所だけで折り返す。Intl.Segmenter がない環境では、そのまま表示する */
 const SEG = typeof Intl !== 'undefined' && Intl.Segmenter ? new Intl.Segmenter('ja', { granularity: 'word' }) : null;
-const wbrTitle = s => { const t = String(s == null ? '' : s); if (!SEG) return esc(t); return [...SEG.segment(t)].map(x => esc(x.segment)).join('<wbr>'); };
+// 「・」「／」「、」などの記号は前の語にくっつけ、行の頭に来ないようにする。開きかっこ（『「（など）は後ろの語にくっつける
+const KANA = /[\u30A1-\u30FAー]/;
+const OPEN = /^[「『（(［\[【〈《〔“‘]+$/;
+const wbrTitle = s => {
+  const t = String(s == null ? '' : s); if (!SEG) return esc(t);
+  let out = '', prev = null;
+  for (const x of SEG.segment(t)) {
+    const open = OPEN.test(x.segment);
+    // カタカナが続く所（ファー｜ザー など、辞書が分けてしまう所）でも折らない
+    if (prev && (x.isWordLike || open) && !OPEN.test(prev.segment) && !(KANA.test(prev.segment.slice(-1)) && KANA.test(x.segment[0]))) out += '<wbr>';
+    out += esc(x.segment); prev = x;
+  }
+  return out;
+};
 const pad = n => String(n).padStart(2, '0');
 const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const parseISO = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
@@ -548,6 +535,12 @@ function layout() {
   if (data && view.length) { buildRail(); markRail(); }
 }
 // read the shared link before anything rewrites the address bar
+let urlOn = false;   // 最初の表示では URL に作品（?f=）を付けない。自分で作品を動かしてから付ける（cinemaladder と同じ）
+function syncUrl() {
+  const f = view[idx]; if (!urlOn || !f) return;
+  try { history.replaceState(null, '', shareUrl(f)); } catch (e) {}   // the address bar is this film's link
+  document.title = `${f.title}｜予告編 - trailadder`;   // the server titles the page after the film in the link; follow the film on screen
+}
 let sharedLink = (() => { const q = new URLSearchParams(location.search), id = +q.get('f'); return id ? { id, v: q.get('v') } : null; })();
 let SW = 0;   // width of the film strip: the whole stage, or the part left of the details column
 function sizePlayer() {
@@ -619,7 +612,8 @@ function setX(x, animate) {
   // 縦画面で詳細を開いているときは、詳細も作品と一緒に横へ動かす（動画の所をなぞっても、詳細の所をなぞっても同じ動きにする）
   if (stage.classList.contains('inl') && sheetOpen === 'info') { sheetBody.style.transition = t; sheetBody.style.transform = x ? tr : ''; }
 }
-function go(dir) {
+function go(dir, auto) {
+  if (!auto) urlOn = true;   // 予告が終わって自動で次へ進んだときは、URL を変えない
   if (animating) finalize();
   if (view.length < 2) { bump(dir); return; }
   animating = true; pendingDir = dir;
@@ -642,6 +636,7 @@ function bump(dir) {
   setTimeout(() => { if (!animating) setX(0, true); }, 170);
 }
 function jumpTo(i) {
+  urlOn = true;   // カレンダーで選んだときと、共有リンクで開いたとき
   if (animating) finalize();
   idx = clamp(i, 0, view.length - 1);
   renderAll(); setX(0, false); onSettle();
@@ -652,8 +647,7 @@ function onSettle() {
   if (view.length > 1) for (const n of [idx + 1, idx + 2, idx - 1]) new Image().src = bgUrl(at(n));
   markRail(); updateVinfo();
   if (sheetOpen === 'info') { sheetBody.innerHTML = infoHTML(f); sheetBody.scrollTop = 0; sheetBody.style.transition = 'none'; sheetBody.style.transform = ''; }
-  try { history.replaceState(null, '', shareUrl(f)); } catch (e) {}   // the address bar is always this film's link
-  document.title = `${f.title}｜予告編 - trailadder`;   // the server titles the page after the film in the link; follow the film on screen
+  syncUrl();
   setHud(true); queueLoad();
 }
 function queueLoad() {
@@ -754,7 +748,7 @@ const P = {
     } else if (s === 0) {
       stage.classList.remove('playing', 'buffering', 'loading');
       ytTitle(true);
-      if (isCur) { if (prefs.autoNext && view.length > 1 && !sheetOpen) go(1); else setHud(true); }
+      if (isCur) { if (prefs.autoNext && view.length > 1 && !sheetOpen) go(1, true); else setHud(true); }
     }
   },
   // YouTube turns captions on by itself (from the viewer's account or the video's settings); unloading the module hides them.
@@ -887,6 +881,7 @@ function renderChips() {
 }
 function setFilter(key, initial) {
   const cur = initial ? null : view[idx];
+  if (!initial) urlOn = true;
   let list = listFor(key);
   if (!list.length) { key = 'all'; list = listFor('all'); }
   filter = key; view = list;
@@ -1086,7 +1081,8 @@ function detailsHTML(f, vi) {
   ${f.director.length || f.cast.length || orig ? `<dl class="credits">${orig ? `<dt>原題</dt><dd>${esc(f.otitle)}</dd>` : ''}${f.director.length ? `<dt>監督</dt><dd>${esc(f.director.join('、'))}</dd>` : ''}${f.cast.length ? `<dt>出演</dt><dd>${esc(f.cast.join('、'))}</dd>` : ''}</dl>` : ''}
   <h4>この作品の映像</h4>
   <ul class="vids">${f.vids.map((v, i) => `<li><button type="button" data-vi="${i}" aria-current="${i === vi}">${esc(v.name || vidLabel(v))}<span>${esc(vidLabel(v))}</span></button></li>`).join('')}</ul>
-  <p class="links"><a href="https://www.youtube.com/watch?v=${esc(curVid(f).key)}" target="_blank" rel="noopener">YouTube で開く</a><a href="https://www.themoviedb.org/movie/${f.id}?language=ja-JP" target="_blank" rel="noopener">TMDB で見る</a></p>`;
+  <p class="links"><a href="https://www.youtube.com/watch?v=${esc(curVid(f).key)}" target="_blank" rel="noopener">YouTube で開く</a><a href="https://cinemaladder.com/?f=${f.id}" target="_blank" rel="noopener">Cinemaladderで評判をはしごする</a></p>
+  <p class="credit">作品情報と画像は <a href="https://www.themoviedb.org" target="_blank" rel="noopener">TMDB</a> から取得しています。This product uses the TMDB API but is not endorsed or certified by TMDB.</p>`;
 }
 function settingsHTML() {
   const t = new Date(data.fetchedAt);
@@ -1096,8 +1092,6 @@ function settingsHTML() {
   <label class="row" for="optFill"><span>映像を画面いっぱいに拡大する<small>上下が少し切れます。ピンチでも切り替えられます</small></span><input class="sw" type="checkbox" id="optFill"${prefs.fill ? ' checked' : ''}></label>
   ${coarse ? `<div class="row"><span>画面の向き<small>横画面は、本体の画面の回転ロックをオンにしてお使いください</small></span><button class="btn" type="button" data-act="mode">${prefs.mode === 'landscape' ? '縦画面にする' : '横画面にする'}</button></div>` : ''}
   ${coarse && prefs.mode === 'landscape' ? `<div class="row"><span>横画面で倒す向き<small>本体をどちらに倒して観るかを入れ替えます</small></span><button class="btn" type="button" data-act="flip">反対向きにする</button></div>` : ''}
-  <div class="row fontrow"><span>フォント<small>この端末に保存されます</small></span>
-    <div class="fonts">${Object.keys(FONTS).map(k => `<button type="button" data-act="font" data-v="${k}" aria-pressed="${document.documentElement.dataset.font === k}">${FONTS[k].name}</button>`).join('')}</div></div>
   <div class="row"><span>作品データ<small>${data.films.length}本・${t.getMonth() + 1}月${t.getDate()}日 ${t.getHours()}:${pad(t.getMinutes())} 更新（毎朝自動で更新）</small></span><button class="btn" type="button" data-act="reload">読み込み直す</button></div>
   <div class="row"><span>音が出ないとき<small>映像を一度だけ直接タップして再生します</small></span><button class="btn" type="button" data-act="unlock">直接タップに切り替える</button></div>
   <p class="credit">作品情報と画像は TMDB から取得しています。This product uses the TMDB API but is not endorsed or certified by TMDB. 映像は YouTube の埋め込みプレイヤーで再生しています。</p>`;
@@ -1133,17 +1127,13 @@ function sheetAct(target, viaTouch) {
   }
   if (b.dataset.vi != null) {
     const f = view[idx]; f.vi = +b.dataset.vi; f.blocked = false; f.tries = 0;
+    urlOn = true; syncUrl();   // 選んだ予告編を URL（&v=）にも反映する
     closeSheet(); updateVinfo(); roles.cur.classList.remove('live'); queueLoad();
     return true;
   }
   const act = b.dataset.act;
   if (act === 'mode') { closeSheet(); setMode(prefs.mode === 'landscape' ? 'portrait' : 'landscape'); }
   else if (act === 'flip') { prefs.flip = !prefs.flip; savePrefs(); layout(); if (!rot) toast('縦向きで開いたときに反映されます'); }
-  else if (act === 'font') {
-    const k = b.dataset.v; applyFont(k);
-    try { localStorage.setItem('tl.font', k); } catch (e) {}
-    b.parentNode.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
-  }
   else if (act === 'reload') { closeSheet(); start(true); }
   else if (act === 'unlock') {
     closeSheet();
