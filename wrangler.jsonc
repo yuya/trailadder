@@ -5,5 +5,7 @@
   "name": "trailadder",
   "main": "worker.js",
   "compatibility_date": "2026-06-01",
-  "assets": { "directory": "./", "binding": "ASSETS", "run_worker_first": ["/"] }
+  "assets": { "directory": "./", "binding": "ASSETS", "run_worker_first": ["/"] },
+  // wrangler preview（stg などのブランチ用の確認環境）に必要。プレビュー専用の設定はないので空。assets などは上の設定をそのまま使う
+  "previews": {}
 }
