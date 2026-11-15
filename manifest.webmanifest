@@ -1,6 +1,6 @@
 {
-  "name": "trailadder",
-  "short_name": "trailadder",
+  "name": "Trailadder",
+  "short_name": "Trailadder",
   "description": "公開から1か月以内の映画と、2か月先までの公開予定作の予告編を、公開日順にスワイプで観る。",
   "lang": "ja",
   "start_url": "./",

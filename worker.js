@@ -21,11 +21,16 @@ async function film(env, origin, id) {
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
-    const page = await env.ASSETS.fetch(req);
+    let page = await env.ASSETS.fetch(req);
+    if (url.hostname !== 'trailadder.com') {   // stg やプレビューの URL は検索に載せない（本番と同じ内容が二重に載るのを防ぐ）
+      page = new Response(page.body, page);
+      page.headers.set('X-Robots-Tag', 'noindex');
+    }
     if (req.method !== 'GET' || url.pathname !== '/' || !(page.headers.get('content-type') || '').includes('text/html')) return page;
 
     const set = (attr, value) => ({ element(e) { e.setAttribute(attr, value); } });
     const rw = new HTMLRewriter()
+      .on('link[rel="canonical"]', set('href', url.origin + '/'))
       .on('meta[property="og:url"]', set('content', url.origin + '/'))
       .on('meta[property="og:image"]', set('content', url.origin + '/icons/icon-512.png'));
 
@@ -35,9 +40,9 @@ export default {
 
     const [y, m, d] = f.d.split('-').map(Number);
     const dow = DOW[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
-    const title = `${f.t}｜予告編 - trailadder`;
+    const title = `${f.t}｜予告編 - Trailadder`;
     const facts = [`${m}月${d}日（${dow}）公開`, f.r ? `${f.r}分` : '', (f.g || []).slice(0, 2).map(g => SHORT[g] || g).join('／')].filter(Boolean).join('・');
-    const desc = `${f.t}（${facts}）の予告編。trailadder では公開日順に予告編をスワイプで観られます。`;
+    const desc = `${f.t}（${facts}）の予告編。Trailadder では公開日順に予告編をスワイプで観られます。`;
     const canon = `${url.origin}/?f=${id}`;
     const image = f.b ? IMG + 'w780' + f.b : f.p ? IMG + 'w500' + f.p : url.origin + '/icons/icon-512.png';
 
@@ -46,8 +51,10 @@ export default {
       .on('meta[name="description"]', set('content', desc))
       .on('meta[property="og:title"]', set('content', title))
       .on('meta[property="og:description"]', set('content', desc))
+      .on('link[rel="canonical"]', set('href', canon))   // 作品ごとのページとして検索に載せる
       .on('meta[property="og:url"]', set('content', canon))
       .on('meta[property="og:image"]', set('content', image))
+      .on('meta[property="og:image:alt"]', set('content', f.t))
       .on('meta[name="twitter:card"]', set('content', f.b ? 'summary_large_image' : 'summary'))
       .transform(page);
   },

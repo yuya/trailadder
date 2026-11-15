@@ -2,22 +2,24 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<title>trailadder</title>
+<title>Trailadder - 映画の予告編を、はしごする</title>
+<link rel="canonical" href="https://trailadder.com/">
 <meta name="description" content="公開から1か月以内の映画と、2か月先までの公開予定作の予告編を、公開日順にスワイプで観る。">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="trailadder">
-<meta property="og:title" content="trailadder">
+<meta property="og:site_name" content="Trailadder">
+<meta property="og:title" content="Trailadder - 映画の予告編を、はしごする">
 <meta property="og:description" content="公開から1か月以内の映画と、2か月先までの公開予定作の予告編を、公開日順にスワイプで観る。">
-<meta property="og:url" content="/">
-<meta property="og:image" content="/icons/icon-512.png">
+<meta property="og:url" content="https://trailadder.com/">
+<meta property="og:image" content="https://trailadder.com/icons/icon-512.png">
+<meta property="og:image:alt" content="Trailadder">
 <meta name="twitter:card" content="summary">
 <meta name="theme-color" content="#000000">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="trailadder">
+<meta name="apple-mobile-web-app-title" content="Trailadder">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
@@ -321,6 +323,30 @@ html.stg #envtag{display:block}
   *,*::before,*::after{animation:none!important;transition-duration:.01ms!important}
 }
 </style>
+<!-- 検索エンジン向けの構造化データ（サイトの種類・名前・読み方・姉妹サイト） -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Trailadder",
+  "alternateName": "トレイラダー",
+  "url": "https://trailadder.com/",
+  "description": "公開から1か月以内の映画と、2か月先までの公開予定作の予告編を、公開日順にスワイプで観る。",
+  "inLanguage": "ja",
+  "applicationCategory": "EntertainmentApplication",
+  "operatingSystem": "Any",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "JPY"
+  },
+  "isRelatedTo": {
+    "@type": "WebSite",
+    "name": "Cinemaladder",
+    "url": "https://cinemaladder.com/"
+  }
+}
+</script>
 </head>
 <body>
 
@@ -539,7 +565,7 @@ let urlOn = false;   // 最初の表示では URL に作品（?f=）を付けな
 function syncUrl() {
   const f = view[idx]; if (!urlOn || !f) return;
   try { history.replaceState(null, '', shareUrl(f)); } catch (e) {}   // the address bar is this film's link
-  document.title = `${f.title}｜予告編 - trailadder`;   // the server titles the page after the film in the link; follow the film on screen
+  document.title = `${f.title}｜予告編 - Trailadder`;   // the server titles the page after the film in the link; follow the film on screen
 }
 let sharedLink = (() => { const q = new URLSearchParams(location.search), id = +q.get('f'); return id ? { id, v: q.get('v') } : null; })();
 let SW = 0;   // width of the film strip: the whole stage, or the part left of the details column
