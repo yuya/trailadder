@@ -249,6 +249,7 @@ a{color:inherit}
 .sw:checked{background:var(--bulb)}
 .sw:checked::after{transform:translateX(18px);background:var(--curtain-deep)}
 .credit{margin:0;font:400 11px/1.75 var(--ui);font-feature-settings:inherit;opacity:.62}
+.credit.pages{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;opacity:.8}   /* 運営者情報などへのリンク（設定画面の一番下） */
 
 #veil{position:absolute;inset:0;z-index:8;display:grid;align-content:center;padding:0 var(--gr) 0 calc(var(--gl) + 5%)}
 .vin{display:grid;gap:12px;max-width:34rem}
@@ -1120,7 +1121,8 @@ function settingsHTML() {
   ${coarse && prefs.mode === 'landscape' ? `<div class="row"><span>横画面で倒す向き<small>本体をどちらに倒して観るかを入れ替えます</small></span><button class="btn" type="button" data-act="flip">反対向きにする</button></div>` : ''}
   <div class="row"><span>作品データ<small>${data.films.length}本・${t.getMonth() + 1}月${t.getDate()}日 ${t.getHours()}:${pad(t.getMinutes())} 更新（毎朝自動で更新）</small></span><button class="btn" type="button" data-act="reload">読み込み直す</button></div>
   <div class="row"><span>音が出ないとき<small>映像を一度だけ直接タップして再生します</small></span><button class="btn" type="button" data-act="unlock">直接タップに切り替える</button></div>
-  <p class="credit">作品情報と画像は TMDB から取得しています。This product uses the TMDB API but is not endorsed or certified by TMDB. 映像は YouTube の埋め込みプレイヤーで再生しています。</p>`;
+  <p class="credit">作品情報と画像は TMDB から取得しています。This product uses the TMDB API but is not endorsed or certified by TMDB. 映像は YouTube の埋め込みプレイヤーで再生しています。</p>
+  <p class="credit pages"><a href="/about">運営者情報</a><a href="/privacy">プライバシーポリシー</a><a href="https://cinemaladder.com/" target="_blank" rel="noopener">Cinemaladder</a></p>`;
 }
 let inlT = 0;
 function openSheet(kind) {
