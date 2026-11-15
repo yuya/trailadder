@@ -116,7 +116,7 @@ a{color:inherit}
 .state{flex:none;font:600 12.5px/1 var(--ui);font-feature-settings:inherit;padding:7px 12px;border-radius:99px;white-space:nowrap}
 .state.lit{background:var(--bulb);color:var(--curtain-deep)}
 .state.unlit{box-shadow:inset 0 0 0 1.5px var(--silver);background:rgba(0,0,0,.3)}
-.title{margin:0;font:500 clamp(20px,calc(var(--H) * .074),40px)/1.25 var(--name);font-feature-settings:inherit;text-wrap:pretty;word-break:keep-all;overflow-wrap:anywhere;text-shadow:0 1px 14px rgba(0,0,0,.65);
+.title{margin:0;font:500 clamp(20px,calc(var(--H) * .074),40px)/1.25 var(--name);font-feature-settings:inherit;text-wrap:wrap;word-break:keep-all;overflow-wrap:anywhere;text-shadow:0 1px 14px rgba(0,0,0,.65);
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 .sub{margin:0;font:400 12.5px/1.5 var(--ui);font-feature-settings:inherit;opacity:.86;text-shadow:0 1px 6px rgba(0,0,0,.7)}
 
@@ -241,10 +241,12 @@ a{color:inherit}
 #bClose{position:absolute;z-index:1;top:calc(var(--gt) + 2px);right:calc(var(--gr) - 8px)}
 #sheetBody{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;touch-action:none;padding:calc(var(--gt) + 14px) var(--gr) calc(var(--gb) + 16px) 22px;display:flex;flex-direction:column;gap:14px}
 #sheetBody>*{flex:none}
-.ihead{display:flex;gap:14px;align-items:flex-start;padding-right:38px}
+.ihead{display:flex;gap:14px;align-items:flex-start}
+.ihead>div{flex:1;min-width:0}
+.idate{padding-right:38px}   /* × の分は日付の行だけ空ける。題名はその下なので、右端まで使う */
 .poster{flex:none;width:76px;aspect-ratio:2/3;border-radius:4px;object-fit:cover;background:rgba(0,0,0,.3)}
 .idate{margin:0 0 4px;font:600 12px/1.4 var(--ui);font-feature-settings:inherit;color:var(--bulb)}
-.ihead h3{margin:0;font:500 21px/1.3 var(--name);font-feature-settings:inherit;text-wrap:pretty;word-break:keep-all;overflow-wrap:anywhere}
+.ihead h3{margin:0;font:500 21px/1.3 var(--name);font-feature-settings:inherit;text-wrap:wrap;word-break:keep-all;overflow-wrap:anywhere}
 .iorig,.isub{margin:3px 0 0;font:400 12px/1.5 var(--ui);font-feature-settings:inherit;opacity:.76}
 .overview{margin:0;font:400 13.5px/1.85 var(--ui);font-feature-settings:inherit}
 .ovnote{margin:-6px 0 0;font:400 11.5px/1.6 var(--ui);font-feature-settings:inherit;opacity:.6}
@@ -446,7 +448,20 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&a
 /* 題名の改行位置。日本語は単語の区切りに <wbr> を入れ、CSS は「単語の途中では折らない」（keep-all）にする。
    こうすると、Chrome でも Safari でも、区切りのよい所だけで折り返す。Intl.Segmenter がない環境では、そのまま表示する */
 const SEG = typeof Intl !== 'undefined' && Intl.Segmenter ? new Intl.Segmenter('ja', { granularity: 'word' }) : null;
-const wbrTitle = s => { const t = String(s == null ? '' : s); if (!SEG) return esc(t); return [...SEG.segment(t)].map(x => esc(x.segment)).join('<wbr>'); };
+// 「・」「／」「、」などの記号は前の語にくっつけ、行の頭に来ないようにする。開きかっこ（『「（など）は後ろの語にくっつける
+const KANA = /[\u30A1-\u30FAー]/;
+const OPEN = /^[「『（(［\[【〈《〔“‘]+$/;
+const wbrTitle = s => {
+  const t = String(s == null ? '' : s); if (!SEG) return esc(t);
+  let out = '', prev = null;
+  for (const x of SEG.segment(t)) {
+    const open = OPEN.test(x.segment);
+    // カタカナが続く所（ファー｜ザー など、辞書が分けてしまう所）でも折らない
+    if (prev && (x.isWordLike || open) && !OPEN.test(prev.segment) && !(KANA.test(prev.segment.slice(-1)) && KANA.test(x.segment[0]))) out += '<wbr>';
+    out += esc(x.segment); prev = x;
+  }
+  return out;
+};
 const pad = n => String(n).padStart(2, '0');
 const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const parseISO = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
@@ -548,6 +563,12 @@ function layout() {
   if (data && view.length) { buildRail(); markRail(); }
 }
 // read the shared link before anything rewrites the address bar
+let urlOn = false;   // 最初の表示では URL に作品（?f=）を付けない。自分で作品を動かしてから付ける（cinemaladder と同じ）
+function syncUrl() {
+  const f = view[idx]; if (!urlOn || !f) return;
+  try { history.replaceState(null, '', shareUrl(f)); } catch (e) {}   // the address bar is this film's link
+  document.title = `${f.title}｜予告編 - trailadder`;   // the server titles the page after the film in the link; follow the film on screen
+}
 let sharedLink = (() => { const q = new URLSearchParams(location.search), id = +q.get('f'); return id ? { id, v: q.get('v') } : null; })();
 let SW = 0;   // width of the film strip: the whole stage, or the part left of the details column
 function sizePlayer() {
@@ -619,7 +640,8 @@ function setX(x, animate) {
   // 縦画面で詳細を開いているときは、詳細も作品と一緒に横へ動かす（動画の所をなぞっても、詳細の所をなぞっても同じ動きにする）
   if (stage.classList.contains('inl') && sheetOpen === 'info') { sheetBody.style.transition = t; sheetBody.style.transform = x ? tr : ''; }
 }
-function go(dir) {
+function go(dir, auto) {
+  if (!auto) urlOn = true;   // 予告が終わって自動で次へ進んだときは、URL を変えない
   if (animating) finalize();
   if (view.length < 2) { bump(dir); return; }
   animating = true; pendingDir = dir;
@@ -642,6 +664,7 @@ function bump(dir) {
   setTimeout(() => { if (!animating) setX(0, true); }, 170);
 }
 function jumpTo(i) {
+  urlOn = true;   // カレンダーで選んだときと、共有リンクで開いたとき
   if (animating) finalize();
   idx = clamp(i, 0, view.length - 1);
   renderAll(); setX(0, false); onSettle();
@@ -652,8 +675,7 @@ function onSettle() {
   if (view.length > 1) for (const n of [idx + 1, idx + 2, idx - 1]) new Image().src = bgUrl(at(n));
   markRail(); updateVinfo();
   if (sheetOpen === 'info') { sheetBody.innerHTML = infoHTML(f); sheetBody.scrollTop = 0; sheetBody.style.transition = 'none'; sheetBody.style.transform = ''; }
-  try { history.replaceState(null, '', shareUrl(f)); } catch (e) {}   // the address bar is always this film's link
-  document.title = `${f.title}｜予告編 - trailadder`;   // the server titles the page after the film in the link; follow the film on screen
+  syncUrl();
   setHud(true); queueLoad();
 }
 function queueLoad() {
@@ -754,7 +776,7 @@ const P = {
     } else if (s === 0) {
       stage.classList.remove('playing', 'buffering', 'loading');
       ytTitle(true);
-      if (isCur) { if (prefs.autoNext && view.length > 1 && !sheetOpen) go(1); else setHud(true); }
+      if (isCur) { if (prefs.autoNext && view.length > 1 && !sheetOpen) go(1, true); else setHud(true); }
     }
   },
   // YouTube turns captions on by itself (from the viewer's account or the video's settings); unloading the module hides them.
@@ -887,6 +909,7 @@ function renderChips() {
 }
 function setFilter(key, initial) {
   const cur = initial ? null : view[idx];
+  if (!initial) urlOn = true;
   let list = listFor(key);
   if (!list.length) { key = 'all'; list = listFor('all'); }
   filter = key; view = list;
@@ -1086,7 +1109,8 @@ function detailsHTML(f, vi) {
   ${f.director.length || f.cast.length || orig ? `<dl class="credits">${orig ? `<dt>原題</dt><dd>${esc(f.otitle)}</dd>` : ''}${f.director.length ? `<dt>監督</dt><dd>${esc(f.director.join('、'))}</dd>` : ''}${f.cast.length ? `<dt>出演</dt><dd>${esc(f.cast.join('、'))}</dd>` : ''}</dl>` : ''}
   <h4>この作品の映像</h4>
   <ul class="vids">${f.vids.map((v, i) => `<li><button type="button" data-vi="${i}" aria-current="${i === vi}">${esc(v.name || vidLabel(v))}<span>${esc(vidLabel(v))}</span></button></li>`).join('')}</ul>
-  <p class="links"><a href="https://www.youtube.com/watch?v=${esc(curVid(f).key)}" target="_blank" rel="noopener">YouTube で開く</a><a href="https://www.themoviedb.org/movie/${f.id}?language=ja-JP" target="_blank" rel="noopener">TMDB で見る</a></p>`;
+  <p class="links"><a href="https://www.youtube.com/watch?v=${esc(curVid(f).key)}" target="_blank" rel="noopener">YouTube で開く</a><a href="https://cinemaladder.com/?q=${encodeURIComponent(f.title)}&amp;id=${f.id}" target="_blank" rel="noopener">Cinemaladder で見る</a></p>
+  <p class="credit">作品情報と画像は <a href="https://www.themoviedb.org" target="_blank" rel="noopener">TMDB</a> から取得しています。This product uses the TMDB API but is not endorsed or certified by TMDB.</p>`;
 }
 function settingsHTML() {
   const t = new Date(data.fetchedAt);
@@ -1133,6 +1157,7 @@ function sheetAct(target, viaTouch) {
   }
   if (b.dataset.vi != null) {
     const f = view[idx]; f.vi = +b.dataset.vi; f.blocked = false; f.tries = 0;
+    urlOn = true; syncUrl();   // 選んだ予告編を URL（&v=）にも反映する
     closeSheet(); updateVinfo(); roles.cur.classList.remove('live'); queueLoad();
     return true;
   }
