@@ -12,9 +12,11 @@
 <meta property="og:title" content="Trailadder - 映画の予告編を、はしごする">
 <meta property="og:description" content="公開から1か月以内の映画と、2か月先までの公開予定作の予告編を、公開日順にスワイプで観る。">
 <meta property="og:url" content="https://trailadder.com/">
-<meta property="og:image" content="https://trailadder.com/icons/icon-512.png">
-<meta property="og:image:alt" content="Trailadder">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="https://trailadder.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Trailadder - 映画の予告編を、はしごする">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#000000">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -32,6 +34,8 @@
 <script>
 /* 確認用（stg）のアドレス（stg.… / stg-….）で開いたときだけ、画面に印を出す */
 if (/^stg[.-]/.test(location.hostname)) document.documentElement.classList.add('stg');
+/* 作品データは、ページの残り（本体のスクリプト）を読み終えるのを待たずに取りに行く。start() が最初の1回だけこれを使う */
+window.FILMS = fetch('data/films.json', { cache: 'no-cache' }).catch(() => null);
 </script>
 <style>
 :root{
@@ -625,8 +629,9 @@ function paint(el, f) {
   $('.title', el).innerHTML = wbrTitle(f.title);
   $('.sub', el).textContent = subOf(f);
   $('.ov', el).textContent = f.overview || '';
-  $('.amb', el).style.backgroundImage = `url("${f.backdrop ? IMG + 'w300' + f.backdrop : bgUrl(f)}")`;
+  $('.amb', el).style.backgroundImage = `url("${ambUrl(f)}")`;
 }
+const ambUrl = f => f.backdrop ? IMG + 'w300' + f.backdrop : bgUrl(f);   // 縦画面の背景のぼかし用（小さい画像）
 const at = i => { const n = view.length; return n ? view[((i % n) + n) % n] : null; };
 const side = i => view.length > 1 ? at(i) : null;
 function setRoles() { for (const k in roles) roles[k].dataset.role = k; }
@@ -670,13 +675,15 @@ function jumpTo(i) {
 }
 function onSettle() {
   const f = view[idx]; if (!f) return;
-  ambient.style.backgroundImage = `url("${f.backdrop ? IMG + 'w300' + f.backdrop : bgUrl(f)}")`;
-  if (view.length > 1) for (const n of [idx + 1, idx + 2, idx - 1]) new Image().src = bgUrl(at(n));
+  ambient.style.backgroundImage = `url("${ambUrl(f)}")`;
+  // 隣の作品の画像は先読みしておく。最初の1本は、今の作品の画像が出てからにする（回線を取り合わない）
+  if (view.length > 1) setTimeout(() => (firstPaint || Promise.resolve()).then(() => { for (const n of [idx + 1, idx + 2, idx - 1]) new Image().src = bgUrl(at(n)); }), 0);
   markRail(); updateVinfo();
   if (sheetOpen === 'info') { sheetBody.innerHTML = infoHTML(f); sheetBody.scrollTop = 0; sheetBody.style.transition = 'none'; sheetBody.style.transform = ''; }
   syncUrl();
   setHud(true); queueLoad();
 }
+let firstPaint = null;   // 最初に出す作品の画像が届いたら（最長1.2秒で）解ける。ready() が作る
 function queueLoad() {
   clearTimeout(loadT);
   stage.classList.remove('stalled', 'playing', 'buffering', 'loading');
@@ -684,7 +691,12 @@ function queueLoad() {
   if (P.ready) { try { P.yt.pauseVideo(); } catch (e) {} }
   const f = view[idx]; if (!f || f.blocked) { loadPending = false; return; }
   loadPending = true; stage.classList.add('loading');
-  loadT = setTimeout(() => { loadPending = false; P.load(curVid(f).key); }, P.yt ? 180 : 0);
+  loadT = setTimeout(() => {
+    loadPending = false;
+    // 最初の1本は、背景の画像を先に出してから YouTube（大きい）を読み込み始める
+    if (!P.yt && firstPaint) firstPaint.then(() => { if (view[idx] === f) P.load(curVid(f).key); });
+    else P.load(curVid(f).key);
+  }, P.yt ? 180 : 0);
 }
 function updateVinfo() {
   const f = view[idx]; if (!f) return;
@@ -1294,7 +1306,8 @@ async function start(force) {
   stage.hidden = false; layout();
   if (!data) stage.classList.add('loading', 'boot');   // 読み込み中は幕を出さず、再生待ちと同じ点の表示だけにする
   try {
-    const r = await fetch('data/films.json', { cache: force ? 'reload' : 'no-cache' });
+    let r = !force && window.FILMS ? await window.FILMS : null; window.FILMS = null;
+    if (!r) r = await fetch('data/films.json', { cache: force ? 'reload' : 'no-cache' });
     if (!r.ok) { const e = new Error('films ' + r.status); e.status = r.status; throw e; }
     const d = await r.json();
     // the file is built each morning; keep today's window exactly
@@ -1315,6 +1328,13 @@ function ready() {
   const link = sharedLink; sharedLink = null;   // only the first start follows the link; later reloads keep the current film
   setFilter('all', true);
   if (link) openShared(link.id, link.v);
+  // 最初に出す作品の画像を、優先して取りに行く（画面でいちばん大きい画像なので、表示の速さの指標 LCP になる）。
+  // YouTube と隣の作品の画像は、これが届いてから（最長1.2秒待って）読み込み始める
+  const f0 = view[idx];
+  if (f0 && !firstPaint) {
+    const im = new Image(); im.fetchPriority = 'high'; im.src = stage.classList.contains('tall') ? ambUrl(f0) : bgUrl(f0);
+    firstPaint = Promise.race([im.decode().catch(() => {}), new Promise(r => setTimeout(r, 1200))]);
+  }
   daysEl.classList.add('intro'); setTimeout(() => daysEl.classList.remove('intro'), 1800);
   if (!store.get('hinted', false)) {
     store.set('hinted', true);
