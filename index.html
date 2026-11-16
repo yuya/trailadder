@@ -35,7 +35,8 @@
 /* 確認用（stg）のアドレス（stg.… / stg-….）で開いたときだけ、画面に印を出す */
 if (/^stg[.-]/.test(location.hostname)) document.documentElement.classList.add('stg');
 /* 作品データは、ページの残り（本体のスクリプト）を読み終えるのを待たずに取りに行く。start() が最初の1回だけこれを使う */
-window.FILMS = fetch('data/films.json', { cache: 'no-cache' }).catch(() => null);
+if (/[?&]demo=1(&|$)/.test(location.search)) document.documentElement.classList.add('demo');   // 撮影用のデモ（?demo=1）
+else window.FILMS = fetch('data/films.json', { cache: 'no-cache' }).catch(() => null);
 </script>
 <style>
 :root{
@@ -266,6 +267,12 @@ a{color:inherit}
 #envtag{display:none;position:absolute;z-index:10;left:var(--gl);bottom:calc(var(--gb) - 3px);pointer-events:none;user-select:none;-webkit-user-select:none;
   font:800 10px/1 var(--name);font-feature-settings:inherit;letter-spacing:.08em;color:var(--curtain-deep);background:var(--bulb);padding:3px 6px;border-radius:4px;opacity:.9}
 html.stg #envtag{display:block}
+/* デモ（?demo=1）：表示中の映像のクレジット（CC BY の表示義務）。
+   横画面は上の段のすぐ下の右端、縦画面は映像の右下に重ねる（下のカレンダーと重ならない所） */
+#democredit{display:none;position:absolute;z-index:10;right:var(--gr);top:calc(46px + var(--gt) + 6px);max-width:60%;pointer-events:none;user-select:none;-webkit-user-select:none;
+  font:500 10px/1.3 var(--ui);font-feature-settings:inherit;color:rgba(255,255,255,.8);text-align:right;text-shadow:0 1px 4px rgba(0,0,0,.8)}
+html.demo #democredit{display:block}
+#stage.tall #democredit{top:calc(var(--vb) - 6px);transform:translateY(-100%);max-width:calc(100% - var(--gl) - var(--gr))}
 #toast{position:absolute;z-index:9;left:50%;top:calc(var(--gt) + 52px);transform:translate(-50%,-8px);max-width:78%;text-align:center;background:rgba(0,0,0,.8);font:400 12.5px/1.55 var(--ui);font-feature-settings:inherit;padding:9px 14px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
 #toast.on{opacity:1;transform:translate(-50%,0)}
 
@@ -425,6 +432,7 @@ html.stg #envtag{display:block}
 
   <div id="toast" role="status" aria-live="polite"></div>
   <div id="envtag" aria-hidden="true">stg</div>
+  <div id="democredit" aria-live="polite"></div>
 </div>
 
 
@@ -435,6 +443,45 @@ html.stg #envtag{display:block}
 /* ---------- constants ---------- */
 const TMDB = 'https://api.themoviedb.org/3';
 const IMG = 'https://image.tmdb.org/t/p/';
+
+/* ---------- 撮影用のデモ（?demo=1） ----------
+   宣伝用の画面収録のため、権利処理の済んだ映像（Blender Foundation のオープンムービー、CC BY）だけを流す。
+   TMDB のデータは使わず、通常の画面からはリンクしない。公開日は並び順と表示のためのダミー（今日からの日数）。
+   YouTube の ID は Blender の公式サイト（studio.blender.org の公開記事、durian / mango.blender.org）に埋め込まれているもののみ */
+const DEMO = document.documentElement.classList.contains('demo');
+const DEMO_FILMS = [
+  { d: -24, title: 'シンテル', otitle: 'Sintel', runtime: 15, genres: ['アニメーション', 'ファンタジー'], gids: [16, 14], pop: 90,
+    overview: '雪山を旅する少女シンテルは、さらわれた小さなドラゴンを探している。手がかりを追って、彼女は危険な土地へと踏み込んでいく。',
+    vids: [['HOfdboHvshg', '予告編', 'Trailer'], ['eRsGyueVLvQ', '本編', 'Clip']], license: 'CC BY 3.0', credit: '(CC) Blender Foundation | durian.blender.org' },
+  { d: -10, title: 'ティアーズ・オブ・スティール', otitle: 'Tears of Steel', runtime: 12, genres: ['サイエンスフィクション'], gids: [878], pop: 70,
+    overview: '近未来のアムステルダム。ロボットに支配されかけた世界を救うため、科学者たちは過去のある出来事をやり直そうとする。',
+    vids: [['R6MlUcmOul8', '本編', 'Clip']], license: 'CC BY 3.0', credit: '(CC) Blender Foundation | mango.blender.org' },
+  { d: 0, title: 'スプライト・フライト', otitle: 'Sprite Fright', runtime: 10, genres: ['アニメーション', 'コメディ'], gids: [16, 35], pop: 85,
+    overview: '森へ遊びに来た騒がしい若者たち。そこで出会ったのは、おだやかなキノコの妖精たちだった――はずが。',
+    vids: [['_cMxraX_5RE', '本編', 'Clip']], license: 'CC BY 4.0', credit: '(CC) Blender Foundation | studio.blender.org' },
+  { d: 9, title: 'チャージ', otitle: 'Charge', runtime: 4, genres: ['アニメーション', 'アクション'], gids: [16, 28], pop: 60,
+    overview: '荒れ果てた世界で、老人はたった一つのエネルギーを守ろうとする。そこへ、それを奪いに来た者が現れる。',
+    vids: [['UXqq0ZvbOnk', '本編', 'Clip']], license: 'CC BY 4.0', credit: '(CC) Blender Foundation | studio.blender.org' },
+  { d: 23, title: 'コーヒー・ラン', otitle: 'Coffee Run', runtime: 0, genres: ['アニメーション', 'ドラマ'], gids: [16, 18], pop: 50,
+    overview: 'コーヒーを片手に走る一人の女性。走りながら、終わってしまった恋の思い出が次々とよみがえる。',
+    vids: [['PVGeM40dABA', '本編', 'Clip']], license: 'CC BY 4.0', credit: '(CC) Blender Foundation | studio.blender.org' },
+  { d: 44, title: 'ウィング・イット！', otitle: 'Wing It!', runtime: 0, genres: ['アニメーション', 'コメディ'], gids: [16, 35], pop: 75,
+    overview: '納屋で手作りのロケットを組み立てる鳥と、それに巻き込まれる相棒。無事に飛び立てるのか。',
+    vids: [['u9lj-c29dxI', '本編', 'Clip']], license: 'CC BY 4.0', credit: '(CC) Blender Foundation | studio.blender.org' },
+];
+function demoData() {
+  const iso0 = d => { const x = new Date(); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() + d); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
+  return {
+    fetchedAt: new Date().toISOString(),
+    films: DEMO_FILMS.map((f, i) => ({
+      id: -(i + 1), title: f.title, otitle: f.otitle, ol: 'en', date: iso0(f.d), cert: '', pop: f.pop, overview: f.overview,
+      runtime: f.runtime, genres: f.genres, gids: f.gids, director: [], cast: [], revival: false,
+      img: `https://i.ytimg.com/vi/${f.vids[0][0]}/maxresdefault.jpg`,   // 背景は YouTube の動画の画像（16:9）
+      vids: f.vids.map(([key, name, type]) => ({ key, name, type, lang: 'en', official: 1 })),
+      license: f.license, credit: f.credit,
+    })),
+  };
+}
 const REGION = 'JP', LANG = 'ja-JP';
 const HOT_N = 20, MAXDOT = 5;
 const NS = 'trailadder.';
@@ -568,7 +615,7 @@ function layout() {
 // read the shared link before anything rewrites the address bar
 let urlOn = false;   // 最初の表示では URL に作品（?f=）を付けない。自分で作品を動かしてから付ける（cinemaladder と同じ）
 function syncUrl() {
-  const f = view[idx]; if (!urlOn || !f) return;
+  const f = view[idx]; if (!urlOn || !f || DEMO) return;   // デモでは URL（?demo=1）を書き換えない
   try { history.replaceState(null, '', shareUrl(f)); } catch (e) {}   // the address bar is this film's link
   document.title = `${f.title}｜予告編 - Trailadder`;   // the server titles the page after the film in the link; follow the film on screen
 }
@@ -608,7 +655,7 @@ function subOf(f) {
   if (f.revival) a.push('リバイバル上映');
   return a.join('　');
 }
-const bgUrl = f => f.backdrop ? IMG + 'w1280' + f.backdrop : f.poster ? IMG + 'w780' + f.poster : `https://i.ytimg.com/vi/${f.vids[0].key}/hqdefault.jpg`;
+const bgUrl = f => f.img ? f.img : f.backdrop ? IMG + 'w1280' + f.backdrop : f.poster ? IMG + 'w780' + f.poster : `https://i.ytimg.com/vi/${f.vids[0].key}/hqdefault.jpg`;
 const curVid = f => f.vids[f.vi || 0];
 function vidLabel(v) {
   let s = TYPE_JA[v.type] || '映像';
@@ -679,6 +726,7 @@ function onSettle() {
   // 隣の作品の画像は先読みしておく。最初の1本は、今の作品の画像が出てからにする（回線を取り合わない）
   if (view.length > 1) setTimeout(() => (firstPaint || Promise.resolve()).then(() => { for (const n of [idx + 1, idx + 2, idx - 1]) new Image().src = bgUrl(at(n)); }), 0);
   markRail(); updateVinfo();
+  if (DEMO) $('#democredit').textContent = `${f.otitle}：${f.credit}（${f.license}）`;
   if (sheetOpen === 'info') { sheetBody.innerHTML = infoHTML(f); sheetBody.scrollTop = 0; sheetBody.style.transition = 'none'; sheetBody.style.transform = ''; }
   syncUrl();
   setHud(true); queueLoad();
@@ -1120,8 +1168,8 @@ function detailsHTML(f, vi) {
   ${f.director.length || f.cast.length || orig ? `<dl class="credits">${orig ? `<dt>原題</dt><dd>${esc(f.otitle)}</dd>` : ''}${f.director.length ? `<dt>監督</dt><dd>${esc(f.director.join('、'))}</dd>` : ''}${f.cast.length ? `<dt>出演</dt><dd>${esc(f.cast.join('、'))}</dd>` : ''}</dl>` : ''}
   <h4>この作品の映像</h4>
   <ul class="vids">${f.vids.map((v, i) => `<li><button type="button" data-vi="${i}" aria-current="${i === vi}">${esc(v.name || vidLabel(v))}<span>${esc(vidLabel(v))}</span></button></li>`).join('')}</ul>
-  <p class="links"><a href="https://www.youtube.com/watch?v=${esc(curVid(f).key)}" target="_blank" rel="noopener">YouTube で開く</a><a href="https://cinemaladder.com/?f=${f.id}" target="_blank" rel="noopener">Cinemaladderで評判をはしごする</a></p>
-  <p class="credit">作品情報と画像は <a href="https://www.themoviedb.org" target="_blank" rel="noopener">TMDB</a> から取得しています。This product uses the TMDB API but is not endorsed or certified by TMDB.</p>`;
+  <p class="links"><a href="https://www.youtube.com/watch?v=${esc(curVid(f).key)}" target="_blank" rel="noopener">YouTube で開く</a>${DEMO ? '' : `<a href="https://cinemaladder.com/?f=${f.id}" target="_blank" rel="noopener">Cinemaladderで評判をはしごする</a>`}</p>
+  ${DEMO ? `<p class="credit">映像：${esc(f.credit)}（${esc(f.license)}）。撮影用のデモです。公開日は表示のためのダミーです。</p>` : `<p class="credit">作品情報と画像は <a href="https://www.themoviedb.org" target="_blank" rel="noopener">TMDB</a> から取得しています。This product uses the TMDB API but is not endorsed or certified by TMDB.</p>`}`;
 }
 function settingsHTML() {
   const t = new Date(data.fetchedAt);
@@ -1306,6 +1354,7 @@ async function start(force) {
   stage.hidden = false; layout();
   if (!data) stage.classList.add('loading', 'boot');   // 読み込み中は幕を出さず、再生待ちと同じ点の表示だけにする
   try {
+    if (DEMO) { const d = demoData(); const t = startOfDay(new Date()); d.from = iso(addMonths(t, -1)); d.to = iso(addMonths(t, 2)); data = d; ready(); return; }
     let r = !force && window.FILMS ? await window.FILMS : null; window.FILMS = null;
     if (!r) r = await fetch('data/films.json', { cache: force ? 'reload' : 'no-cache' });
     if (!r.ok) { const e = new Error('films ' + r.status); e.status = r.status; throw e; }
@@ -1341,6 +1390,29 @@ function ready() {
     setTimeout(() => toast(stage.classList.contains('tall') ? '左右にスワイプで作品を切り替え。あらすじを上になぞると詳細が続きます' : '左右にスワイプで作品を切り替え。右下の「詳細」で作品情報を横に並べます', 5200), 900);
   }
 }
+
+/* ---------- 画面を消さない（Screen Wake Lock） ----------
+   iOS はミュートのインライン再生を「視聴中」とみなさず、自動ロックで画面が消える。
+   ロックは本物の操作（タップ・スワイプ・キー）のあとにだけ取る（ページを開いただけでは取らない）。
+   タブが隠れると自動で外れるので、戻ったときに取り直す。取れないとき（非対応・低電力モードなど）は何もしない */
+let wakeLock = null, waking = false, woke = false, rewoke = false;
+async function keepAwake() {
+  if (!woke || !('wakeLock' in navigator) || document.visibilityState !== 'visible' || wakeLock || waking) return;
+  waking = true;   // 取りに行っている間に操作が続いても、二重に取りに行かない
+  try {
+    const l = await navigator.wakeLock.request('screen');
+    wakeLock = l;
+    l.addEventListener('release', () => {
+      if (wakeLock === l) wakeLock = null;
+      // 画面が見えたまま外されたときは、1回だけ取り直す（失敗を繰り返さない）。次の操作でまた取り直す
+      if (document.visibilityState === 'visible' && !rewoke) { rewoke = true; keepAwake(); }
+    });
+  } catch (e) {}
+  waking = false;
+}
+const onGesture = () => { woke = true; rewoke = false; keepAwake(); };
+for (const t of ['pointerup', 'touchend', 'keydown']) document.addEventListener(t, onGesture, { capture: true, passive: true });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAwake(); });
 
 addEventListener('resize', layout);
 addEventListener('orientationchange', () => setTimeout(layout, 80));
