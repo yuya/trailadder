@@ -483,6 +483,19 @@ function demoData() {
     })),
   };
 }
+// 古い動画には大きいサムネイル（maxresdefault）がなく、YouTube は 120×90 の灰色の画像を返す。
+// そのときは、どの動画にもある hqdefault（480×360。上下の黒帯は 16:9 に切り抜くと消える）に差し替え、表示中の背景も直す
+function demoThumbs() {
+  for (const f of data.films) {
+    const im = new Image();
+    im.onload = im.onerror = () => {
+      if (im.naturalWidth > 120) return;
+      const old = f.img; f.img = `https://i.ytimg.com/vi/${f.vids[0].key}/hqdefault.jpg`;
+      for (const el of document.querySelectorAll('.bg, .amb, #ambient')) if (el.style.backgroundImage.includes(old)) el.style.backgroundImage = `url("${f.img}")`;
+    };
+    im.src = f.img;
+  }
+}
 const REGION = 'JP', LANG = 'ja-JP';
 const HOT_N = 20, MAXDOT = 5;
 const NS = 'trailadder.';
@@ -1355,7 +1368,7 @@ async function start(force) {
   stage.hidden = false; layout();
   if (!data) stage.classList.add('loading', 'boot');   // 読み込み中は幕を出さず、再生待ちと同じ点の表示だけにする
   try {
-    if (DEMO) { const d = demoData(); const t = startOfDay(new Date()); d.from = iso(addMonths(t, -1)); d.to = iso(addMonths(t, 2)); data = d; ready(); return; }
+    if (DEMO) { const d = demoData(); const t = startOfDay(new Date()); d.from = iso(addMonths(t, -1)); d.to = iso(addMonths(t, 2)); data = d; ready(); demoThumbs(); return; }
     let r = !force && window.FILMS ? await window.FILMS : null; window.FILMS = null;
     if (!r) r = await fetch('data/films.json', { cache: force ? 'reload' : 'no-cache' });
     if (!r.ok) { const e = new Error('films ' + r.status); e.status = r.status; throw e; }
