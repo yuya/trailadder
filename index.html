@@ -20,7 +20,8 @@
 <meta name="theme-color" content="#000000">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!-- black：ステータスバーを不透明の黒にし、ページはその下から始める。iOS 26 では black-translucent だと、ホーム画面から起動したときに上端のぼかしが上の段に重なる -->
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Trailadder">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
@@ -267,11 +268,12 @@ a{color:inherit}
 #envtag{display:none;position:absolute;z-index:10;left:var(--gl);bottom:calc(var(--gb) - 3px);pointer-events:none;user-select:none;-webkit-user-select:none;
   font:800 10px/1 var(--name);font-feature-settings:inherit;letter-spacing:.08em;color:var(--curtain-deep);background:var(--bulb);padding:3px 6px;border-radius:4px;opacity:.9}
 html.stg #envtag{display:block}
-/* デモ（?demo=1）：表示中の映像のクレジット（CC BY の表示義務）。
+/* デモ（?demo=1）：表示中の映像のクレジット（CC BY の表示義務）。詳細パネル（z-index:6）より下に描く。
    横画面は上の段のすぐ下の右端、縦画面は映像の右下に重ねる（下のカレンダーと重ならない所） */
-#democredit{display:none;position:absolute;z-index:10;right:var(--gr);top:calc(46px + var(--gt) + 6px);max-width:60%;pointer-events:none;user-select:none;-webkit-user-select:none;
+#democredit{display:none;position:absolute;z-index:5;right:var(--gr);top:calc(46px + var(--gt) + 6px);max-width:60%;pointer-events:none;user-select:none;-webkit-user-select:none;
   font:500 10px/1.3 var(--ui);font-feature-settings:inherit;color:rgba(255,255,255,.8);text-align:right;text-shadow:0 1px 4px rgba(0,0,0,.8)}
 html.demo #democredit{display:block}
+#stage.split #democredit{right:calc(var(--pw) + var(--gr))}
 #stage.tall #democredit{top:calc(var(--vb) - 6px);transform:translateY(-100%);max-width:calc(100% - var(--gl) - var(--gr))}
 #toast{position:absolute;z-index:9;left:50%;top:calc(var(--gt) + 52px);transform:translate(-50%,-8px);max-width:78%;text-align:center;background:rgba(0,0,0,.8);font:400 12.5px/1.55 var(--ui);font-feature-settings:inherit;padding:9px 14px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
 #toast.on{opacity:1;transform:translate(-50%,0)}
@@ -449,26 +451,29 @@ const IMG = 'https://image.tmdb.org/t/p/';
    TMDB のデータは使わず、通常の画面からはリンクしない。公開日は並び順と表示のためのダミーで、すべて金曜日（w は、今日以降で一番近い金曜日から何週目か）。
    YouTube の ID は Blender の公式サイト（studio.blender.org の公開記事、durian / mango.blender.org）に埋め込まれているもののみ */
 const DEMO = document.documentElement.classList.contains('demo');
+// start：最初の映像を何秒目から流すか（冒頭のロゴ・タイトルを飛ばす。実機の収録から決めた値）
 const DEMO_FILMS = [
-  { w: -3, title: 'シンテル', otitle: 'Sintel', runtime: 15, genres: ['アニメーション', 'ファンタジー'], gids: [16, 14], pop: 90,
+  { w: -3, title: 'シンテル', otitle: 'Sintel', start: 3, runtime: 15, genres: ['アニメーション', 'ファンタジー'], gids: [16, 14], pop: 90,
     overview: '雪山を旅する少女シンテルは、さらわれた小さなドラゴンを探している。手がかりを追って、彼女は危険な土地へと踏み込んでいく。',
     vids: [['HOfdboHvshg', '予告編', 'Trailer'], ['eRsGyueVLvQ', '本編', 'Clip']], license: 'CC BY 3.0', credit: '(CC) Blender Foundation | durian.blender.org' },
-  { w: -1, title: 'ティアーズ・オブ・スティール', otitle: 'Tears of Steel', runtime: 12, genres: ['サイエンスフィクション'], gids: [878], pop: 70,
+  { w: -1, title: 'ティアーズ・オブ・スティール', otitle: 'Tears of Steel', start: 50, runtime: 12, genres: ['サイエンスフィクション'], gids: [878], pop: 70,
     overview: '近未来のアムステルダム。ロボットに支配されかけた世界を救うため、科学者たちは過去のある出来事をやり直そうとする。',
     vids: [['R6MlUcmOul8', '本編', 'Clip']], license: 'CC BY 3.0', credit: '(CC) Blender Foundation | mango.blender.org' },
-  { w: 0, title: 'スプライト・フライト', otitle: 'Sprite Fright', runtime: 10, genres: ['アニメーション', 'コメディ'], gids: [16, 35], pop: 85,
+  { w: 0, title: 'スプライト・フライト', otitle: 'Sprite Fright', start: 30, runtime: 10, genres: ['アニメーション', 'コメディ'], gids: [16, 35], pop: 85,
     overview: '森へ遊びに来た騒がしい若者たち。そこで出会ったのは、おだやかなキノコの妖精たちだった――はずが。',
     vids: [['_cMxraX_5RE', '本編', 'Clip']], license: 'CC BY 4.0', credit: '(CC) Blender Foundation | studio.blender.org' },
-  { w: 1, title: 'チャージ', otitle: 'Charge', runtime: 4, genres: ['アニメーション', 'アクション'], gids: [16, 28], pop: 60,
+  { w: 1, title: 'チャージ', otitle: 'Charge', start: 8, runtime: 4, genres: ['アニメーション', 'アクション'], gids: [16, 28], pop: 60,
     overview: '荒れ果てた世界で、老人はたった一つのエネルギーを守ろうとする。そこへ、それを奪いに来た者が現れる。',
     vids: [['UXqq0ZvbOnk', '本編', 'Clip']], license: 'CC BY 4.0', credit: '(CC) Blender Foundation | studio.blender.org' },
-  { w: 3, title: 'コーヒー・ラン', otitle: 'Coffee Run', runtime: 0, genres: ['アニメーション', 'ドラマ'], gids: [16, 18], pop: 50,
+  { w: 3, title: 'コーヒー・ラン', otitle: 'Coffee Run', start: 10, runtime: 0, genres: ['アニメーション', 'ドラマ'], gids: [16, 18], pop: 50,
     overview: 'コーヒーを片手に走る一人の女性。走りながら、終わってしまった恋の思い出が次々とよみがえる。',
     vids: [['PVGeM40dABA', '本編', 'Clip']], license: 'CC BY 4.0', credit: '(CC) Blender Foundation | studio.blender.org' },
-  { w: 6, title: 'ウィング・イット！', otitle: 'Wing It!', runtime: 0, genres: ['アニメーション', 'コメディ'], gids: [16, 35], pop: 75,
+  { w: 6, title: 'ウィング・イット！', otitle: 'Wing It!', start: 6, runtime: 0, genres: ['アニメーション', 'コメディ'], gids: [16, 35], pop: 75,
     overview: '納屋で手作りのロケットを組み立てる鳥と、それに巻き込まれる相棒。無事に飛び立てるのか。',
     vids: [['u9lj-c29dxI', '本編', 'Clip']], license: 'CC BY 4.0', credit: '(CC) Blender Foundation | studio.blender.org' },
 ];
+// デモの映像の開始位置（秒）。最初の映像だけ（シンテルの本編などには付けない）。通常の予告編はいつも0秒から
+const startOf = key => { if (!DEMO) return 0; const f = DEMO_FILMS.find(x => x.vids[0][0] === key); return f ? f.start || 0 : 0; };
 function demoData() {
   const fri = (5 - new Date().getDay() + 7) % 7;   // 今日以降で一番近い金曜日まで何日か（金曜日なら0）
   const iso0 = w => { const x = new Date(); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() + fri + w * 7); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
@@ -805,7 +810,7 @@ const P = {
     }
     if (!this.ready) return;
     if (key === this.key && this.state !== 0) { this.yt.playVideo(); if (this.state === 1) this.onState(1); }
-    else { this.key = key; this.yt.loadVideoById(key); ytTitle(true); }
+    else { this.key = key; const st = startOf(key); if (st) this.yt.loadVideoById({ videoId: key, startSeconds: st }); else this.yt.loadVideoById(key); ytTitle(true); }
     this.watch(key);
   },
   create(key) {
@@ -813,6 +818,7 @@ const P = {
     this.key = key;
     const vars = { autoplay: 1, mute: 1, controls: 0, playsinline: 1, rel: 0, fs: 0, disablekb: 1, iv_load_policy: 3, cc_load_policy: 0, hl: 'ja' };
     if (/^https?:$/.test(location.protocol)) vars.origin = location.origin;
+    if (startOf(key)) vars.start = startOf(key);   // デモだけ
     this.yt = new YT.Player('yt', { width: '100%', height: '100%', videoId: key, playerVars: vars,
       events: { onReady: () => this.onReady(), onStateChange: e => this.onState(e.data), onError: e => this.onError(e.data), onApiChange: () => this.noCaptions() } });
     this.watch(key);
