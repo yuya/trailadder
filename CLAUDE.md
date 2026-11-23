@@ -6,7 +6,7 @@
 
 - **cinemaladder**（https://github.com/yuya/cinemaladder）は姉妹プロジェクト。作業を始めたら、cinemaladder のリポジトリもこのセッションに追加し（読み書きできる形で）、いつでも参照・修正できるようにしておく。
 - TMDB の扱い（日本語の題名がない作品を外す判定 `readable`、部首の文字を直す `fixRad`、ジャンル名 `GENRE_JA`、あらすじの英語補完と DeepL の機械翻訳）は cinemaladder とそろえる。片方を直したら、もう片方も同じように直すか、直さない理由をユーザーに伝える。
-- cinemaladder は `staging` に入れてから `main` に取り込む運用（cinemaladder の CLAUDE.md・README.md を参照）。trailadder は `main` に直接 push してよい。
+- cinemaladder は `stg` に入れてから `main` に取り込む運用（cinemaladder の CLAUDE.md・README.md を参照）。trailadder は `main` に直接 push してよい。
 
 ## 運用の要点
 

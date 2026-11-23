@@ -12,6 +12,21 @@ const TYPE_RANK = { Trailer: 0, Teaser: 1, Clip: 2, Featurette: 3 };
 // - Titles with no Japanese entry come back in the original script (Tamil, Arabic, Hangul...); those films are left out.
 //   Unlike cinemaladder, symbols such as ─ ★ ♪ → (U+2100–27BF) are allowed, so 「4アウト ─もう一度、プレイボール─」 stays.
 const readable = t => !!t && !/[^\u0000-\u024F\u2000-\u206F\u2100-\u27BF\u2E80-\u30FF\u3400-\u9FFF\uF900-\uFAFF\uFF00-\uFFEF]/.test(t);
+// - A film with no Japanese title yet gets its original title in the Japanese field. Chinese originals are all kanji and pass readable,
+//   so a title that is the untranslated original (not a Japanese-language film, no kana) and uses a kanji outside JIS level 1
+//   (characters not used in ordinary Japanese, like 們 in the Taiwanese 那張照片裡的我們) counts as having no Japanese title.
+//   Films released in Japan under their original kanji title, such as 風林火山, stay. Same as cinemaladder.
+const JIS1 = (() => {
+  const d = new TextDecoder('shift_jis'), s = new Set();
+  for (let a = 0x88; a <= 0x98; a++) for (let b = 0x40; b <= 0xfc; b++) {
+    if (b === 0x7f || ((a << 8) | b) < 0x889f || ((a << 8) | b) > 0x9872) continue;
+    const c = d.decode(new Uint8Array([a, b]));
+    if (c.length === 1 && c !== '\ufffd') s.add(c);
+  }
+  return s;
+})();
+const untranslated = m => !!m && m.original_language !== 'ja' && m.title === m.original_title && !/[\u3040-\u30FF]/.test(m.title || '') &&
+  [...(m.title || '')].some(c => /\p{Script=Han}/u.test(c) && !JIS1.has(c));
 // - Radical look-alikes pasted into TMDB titles (the Kangxi "⼆", the supplement "⻯" as in "RYUJI ⻯⼆") become ordinary kanji.
 //   Kangxi radicals are fixed by NFKC; the supplement block is not, so the common ones are mapped by hand.
 const RAD = { '⻁': '虎', '⻄': '西', '⻆': '角', '⻑': '長', '⻘': '青', '⻝': '食', '⻣': '骨', '⻤': '鬼', '⻨': '麦', '⻩': '黄', '⻫': '斉', '⻭': '歯', '⻯': '竜', '⻲': '亀' };
@@ -107,7 +122,7 @@ let unreadable = 0;
 for (const r of [first, ...rest]) for (const m of r.results || []) {
   if (seen.has(m.id)) continue;
   seen.add(m.id);
-  if (!readable(m.title) || /^untitled$/i.test((m.title || '').trim())) { unreadable++; continue; }   // no Japanese title, or a placeholder
+  if (!readable(m.title) || untranslated(m) || /^untitled$/i.test((m.title || '').trim())) { unreadable++; continue; }   // no Japanese title, or a placeholder
   if (!(m.genre_ids || []).length && !m.poster_path) continue;   // no genre and no poster: mostly video products, not films
   list.push(m);
 }
@@ -116,7 +131,7 @@ const films = []; let skipped = 0, failed = 0;
 await pool(list, POOL, async m => {
   try {
     const d = await tmdb('/movie/' + m.id, { language: LANG, append_to_response: 'videos,release_dates,credits', include_video_language: 'ja,en,null' });
-    if (!readable(d.title)) { unreadable++; return; }
+    if (!readable(d.title) || untranslated(d)) { unreadable++; return; }
     if (!(d.overview || '').trim()) {   // no Japanese synopsis: fall back to the English one
       const en = await tmdb('/movie/' + m.id, { language: 'en-US' }).catch(() => null);
       if (en && en.overview) { d.overview = en.overview.trim(); d.ovLang = 'en'; }
